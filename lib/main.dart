@@ -29,9 +29,19 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
-  Future<Map> loadEntries() async {
+  bool? showDoneEntries = true;
+  List? todoEntries;
+  List? doneEntries;
+
+  @override
+  void initState() {
+    loadEntries();
+    super.initState();
+  }
+
+  Future loadEntries() async {
     await Future.delayed(Duration(seconds: 2));
-    return {
+    Map? data = {
       "todo": ["Einkaufen", "Wäsche", "Einkaufen", "Wäsche", "Einkaufen", "Wäsche", "Einkaufen", "Wäsche"],
       "done": [
         "Putzen",
@@ -46,60 +56,78 @@ class _HomePageState extends State<HomePage> {
         "Bett richten",
       ],
     };
+
+    setState(() {
+      todoEntries = data?["todo"] as List<String>? ?? [];
+      doneEntries = data?["done"] as List<String>? ?? [];
+    });
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: FutureBuilder(
-        future: loadEntries(),
-        builder: (BuildContext context, snapshot) {
-          switch (snapshot.connectionState) {
-            case ConnectionState.none:
-            case ConnectionState.waiting:
-            case ConnectionState.active:
-              {
-                return Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      CircularProgressIndicator(color: Theme.of(context).primaryColor),
-                      const SizedBox(height: 20),
-                      const Text("Einen Moment ..."),
-                    ],
-                  ),
-                );
-              }
-            case ConnectionState.done:
-              {
-                final todoEntries = snapshot.data?["todo"] as List<String>? ?? [];
-                final doneEntries = snapshot.data?["done"] as List<String>? ?? [];
-                return Padding(
-                  padding: const EdgeInsets.all(AppSpacing.lg),
-                  child: SingleChildScrollView(
-                    child: Column(
+      body: (todoEntries == null && doneEntries == null)
+          ? Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  CircularProgressIndicator(color: Theme.of(context).primaryColor),
+                  const SizedBox(height: 20),
+                  const Text("Einen Moment ..."),
+                ],
+              ),
+            )
+          : Padding(
+              padding: const EdgeInsets.all(AppSpacing.lg),
+              child: SingleChildScrollView(
+                child: Column(
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.all(AppSpacing.lg),
+                      child: Text("Deine To-Do Liste", style: Theme.of(context).textTheme.headlineLarge),
+                    ),
+
+                    if (todoEntries == null)
+                      Text("Fehler beim Laden der Aufgaben")
+                    else if (todoEntries?.isEmpty == true)
+                      Text("Alle Aufgaben erledigt")
+                    else
+                      for (int i = 0; i < todoEntries!.length; i++)
+                        EntryRow(name: todoEntries![i], isDone: false, showDivider: i < todoEntries!.length - 1),
+                    Row(
                       children: [
-                        Padding(
-                          padding: const EdgeInsets.all(AppSpacing.lg),
-                          child: Text("Deine To-Do Liste", style: Theme.of(context).textTheme.headlineLarge),
+                        Checkbox(
+                          value: showDoneEntries,
+                          onChanged: (newValue) {
+                            setState(() {
+                              showDoneEntries = newValue;
+                            });
+                          },
                         ),
-                        for (int i = 0; i < todoEntries.length; i++)
-                          EntryRow(name: todoEntries[i], isDone: false, showDivider: i < todoEntries.length - 1),
-                        AppSpacing.lg.vSpace,
-                        Padding(
-                          padding: const EdgeInsets.all(AppSpacing.lg),
-                          child: Text("Erledigte Einträge", style: Theme.of(context).textTheme.headlineMedium),
-                        ),
-                        for (int i = 0; i < doneEntries.length; i++)
-                          EntryRow(name: doneEntries[i], isDone: true, showDivider: i < doneEntries.length - 1),
+                        Text("Zeige erledigte Einträge"),
                       ],
                     ),
-                  ),
-                );
-              }
-          }
-        },
-      ),
+                    if (showDoneEntries == true)
+                      Column(
+                        children: [
+                          AppSpacing.lg.vSpace,
+                          Padding(
+                            padding: const EdgeInsets.all(AppSpacing.lg),
+                            child: Text("Erledigte Einträge", style: Theme.of(context).textTheme.headlineMedium),
+                          ),
+                          if (doneEntries == null)
+                            Text("Fehler beim Laden der Aufgaben")
+                          else if (doneEntries?.isEmpty == true)
+                            Text("Noch keine erledigten Aufgaben")
+                          else
+                            for (int i = 0; i < doneEntries!.length; i++)
+                              EntryRow(name: doneEntries![i], isDone: true, showDivider: i < doneEntries!.length - 1),
+                        ],
+                      ),
+                  ],
+                ),
+              ),
+            ),
     );
   }
 }
