@@ -1,0 +1,204 @@
+import 'package:flutter/material.dart';
+import 'package:to_do_list/spacing.dart';
+import 'package:to_do_list/widgets/entry_row.dart';
+
+class ToDoPage extends StatefulWidget {
+  const ToDoPage({super.key});
+
+  @override
+  State<ToDoPage> createState() => _ToDoPageState();
+}
+
+class _ToDoPageState extends State<ToDoPage> {
+  final _todoKey = GlobalKey<AnimatedListState>();
+  final _doneKey = GlobalKey<AnimatedListState>();
+
+  bool _showDone = true;
+  bool _isLoading = true;
+
+  final List<String> _todos = <String>[];
+  final List<String> _dones = <String>[];
+
+  @override
+  void initState() {
+    super.initState();
+    _loadEntries();
+  }
+
+  Future<void> _loadEntries() async {
+    await Future<void>.delayed(const Duration(seconds: 2));
+    const data = {
+      'todo': ['Einkaufen', 'Wäsche', 'Einkaufen', 'Wäsche', 'Einkaufen', 'Wäsche', 'Einkaufen', 'Wäsche'],
+      'done': ['Putzen', 'Bett richten', 'Putzen', 'Bett richten', 'Putzen', 'Bett richten', 'Putzen', 'Bett richten'],
+    };
+
+    setState(() {
+      _todos
+        ..clear()
+        ..addAll(data['todo'] ?? []);
+      _dones
+        ..clear()
+        ..addAll(data['done'] ?? []);
+      _isLoading = false;
+    });
+  }
+
+  void _moveTodoToDone(int index) {
+    final item = _todos.removeAt(index);
+
+    _todoKey.currentState!.removeItem(
+      index,
+      (context, anim) => _animatedTile(
+        name: item,
+        isDone: false,
+        animation: anim,
+        showDivider: index < _todos.length,
+        onChanged: (_) {},
+      ),
+      duration: const Duration(milliseconds: 220),
+    );
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final insertIndex = _dones.length;
+      _dones.add(item);
+      _doneKey.currentState!.insertItem(insertIndex, duration: const Duration(milliseconds: 280));
+    });
+  }
+
+  void _moveDoneToTodo(int index) {
+    final item = _dones.removeAt(index);
+
+    _doneKey.currentState!.removeItem(
+      index,
+      (context, anim) => _animatedTile(
+        name: item,
+        isDone: true,
+        animation: anim,
+        showDivider: index < _dones.length,
+        onChanged: (_) {},
+      ),
+      duration: const Duration(milliseconds: 220),
+    );
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final insertIndex = _todos.length;
+      _todos.add(item);
+      _todoKey.currentState!.insertItem(insertIndex, duration: const Duration(milliseconds: 280));
+    });
+  }
+
+  Widget _animatedTile({
+    required String name,
+    required bool isDone,
+    required Animation<double> animation,
+    required bool showDivider,
+    required ValueChanged<bool> onChanged,
+  }) {
+    return SizeTransition(
+      sizeFactor: CurvedAnimation(parent: animation, curve: Curves.easeOut),
+      child: FadeTransition(
+        opacity: animation,
+        child: EntryRow(name: name, isDone: isDone, showDivider: showDivider, onChanged: onChanged),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (_isLoading) {
+      return Scaffold(
+        body: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              CircularProgressIndicator(color: Theme.of(context).colorScheme.primary),
+              AppSpacing.md.vSpace,
+              const Text('Einen Moment ...'),
+            ],
+          ),
+        ),
+      );
+    }
+
+    final theme = Theme.of(context);
+    final textTheme = theme.textTheme;
+
+    return Scaffold(
+      body: Padding(
+        padding: const EdgeInsets.all(AppSpacing.lg),
+        child: SingleChildScrollView(
+          child: Column(
+            children: [
+              Padding(
+                padding: const EdgeInsets.all(AppSpacing.lg),
+                child: Text('Deine To-Do Liste', style: textTheme.headlineLarge),
+              ),
+
+              if (_todos.isEmpty)
+                const Text('Alle Aufgaben erledigt')
+              else
+                AnimatedList(
+                  key: _todoKey,
+                  initialItemCount: _todos.length,
+                  primary: false,
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  itemBuilder: (context, index, animation) {
+                    final name = _todos[index];
+                    return _animatedTile(
+                      name: name,
+                      isDone: false,
+                      animation: animation,
+                      showDivider: index < _todos.length - 1,
+                      onChanged: (checked) {
+                        if (checked) _moveTodoToDone(index);
+                      },
+                    );
+                  },
+                ),
+
+              AppSpacing.lg.vSpace,
+
+              Row(
+                children: [
+                  Checkbox(value: _showDone, onChanged: (newValue) => setState(() => _showDone = newValue ?? true)),
+                  const Text('Zeige erledigte Einträge'),
+                ],
+              ),
+
+              if (_showDone) ...[
+                AppSpacing.lg.vSpace,
+                Padding(
+                  padding: const EdgeInsets.all(AppSpacing.lg),
+                  child: Text('Erledigte Einträge', style: textTheme.headlineMedium),
+                ),
+                if (_dones.isEmpty)
+                  const Text('Noch keine erledigten Aufgaben')
+                else
+                  AnimatedList(
+                    key: _doneKey,
+                    initialItemCount: _dones.length,
+                    primary: false,
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
+                    itemBuilder: (context, index, animation) {
+                      final name = _dones[index];
+                      return _animatedTile(
+                        name: name,
+                        isDone: true,
+                        animation: animation,
+                        showDivider: index < _dones.length - 1,
+                        onChanged: (checked) {
+                          if (!checked) _moveDoneToTodo(index);
+                        },
+                      );
+                    },
+                  ),
+              ],
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
