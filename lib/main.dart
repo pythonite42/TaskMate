@@ -32,8 +32,19 @@ class _HomePageState extends State<HomePage> {
   Future<Map> loadEntries() async {
     await Future.delayed(Duration(seconds: 2));
     return {
-      "todo": ["Einkaufen", "Wäsche"],
-      "done": ["Putzen", "Bett richten"],
+      "todo": ["Einkaufen", "Wäsche", "Einkaufen", "Wäsche", "Einkaufen", "Wäsche", "Einkaufen", "Wäsche"],
+      "done": [
+        "Putzen",
+        "Bett richten",
+        "Putzen",
+        "Bett richten",
+        "Putzen",
+        "Bett richten",
+        "Putzen",
+        "Bett richten",
+        "Putzen",
+        "Bett richten",
+      ],
     };
   }
 
@@ -61,22 +72,28 @@ class _HomePageState extends State<HomePage> {
               }
             case ConnectionState.done:
               {
+                final todoEntries = snapshot.data?["todo"] as List<String>? ?? [];
+                final doneEntries = snapshot.data?["done"] as List<String>? ?? [];
                 return Padding(
                   padding: const EdgeInsets.all(AppSpacing.lg),
-                  child: Column(
-                    children: [
-                      Padding(
-                        padding: const EdgeInsets.all(AppSpacing.lg),
-                        child: Text("Deine To-Do Liste", style: Theme.of(context).textTheme.headlineLarge),
-                      ),
-                      for (String entry in snapshot.data?["todo"]) EntryRow(name: entry, isDone: false),
-                      AppSpacing.lg.vSpace,
-                      Padding(
-                        padding: const EdgeInsets.all(AppSpacing.lg),
-                        child: Text("Erledigte Einträge", style: Theme.of(context).textTheme.headlineMedium),
-                      ),
-                      for (String entry in snapshot.data?["done"]) EntryRow(name: entry, isDone: true),
-                    ],
+                  child: SingleChildScrollView(
+                    child: Column(
+                      children: [
+                        Padding(
+                          padding: const EdgeInsets.all(AppSpacing.lg),
+                          child: Text("Deine To-Do Liste", style: Theme.of(context).textTheme.headlineLarge),
+                        ),
+                        for (int i = 0; i < todoEntries.length; i++)
+                          EntryRow(name: todoEntries[i], isDone: false, showDivider: i < todoEntries.length - 1),
+                        AppSpacing.lg.vSpace,
+                        Padding(
+                          padding: const EdgeInsets.all(AppSpacing.lg),
+                          child: Text("Erledigte Einträge", style: Theme.of(context).textTheme.headlineMedium),
+                        ),
+                        for (int i = 0; i < doneEntries.length; i++)
+                          EntryRow(name: doneEntries[i], isDone: true, showDivider: i < doneEntries.length - 1),
+                      ],
+                    ),
                   ),
                 );
               }
@@ -88,16 +105,28 @@ class _HomePageState extends State<HomePage> {
 }
 
 class EntryRow extends StatelessWidget {
-  const EntryRow({super.key, required this.name, required this.isDone});
+  const EntryRow({super.key, required this.name, required this.isDone, this.showDivider = false});
 
   final String name;
   final bool isDone;
+  final bool showDivider;
+
   @override
   Widget build(BuildContext context) {
-    return Row(
+    return Column(
+      mainAxisSize: MainAxisSize.min,
       children: [
-        Text(name),
-        Checkbox(value: isDone, onChanged: (newValue) {}),
+        Padding(
+          padding: const EdgeInsets.symmetric(vertical: 12.0, horizontal: 16.0),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Expanded(child: Text(name)),
+              Checkbox(value: isDone, onChanged: (newValue) {}),
+            ],
+          ),
+        ),
+        if (showDivider) Divider(height: 1, thickness: 0.5, color: Theme.of(context).dividerColor),
       ],
     );
   }
