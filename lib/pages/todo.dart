@@ -55,6 +55,7 @@ class _ToDoPageState extends State<ToDoPage> {
         showDivider: index < _todos.length,
         onChanged: (_) {},
         onDelete: () {},
+        onRename: (_) {},
       ),
       duration: const Duration(milliseconds: 220),
     );
@@ -78,6 +79,7 @@ class _ToDoPageState extends State<ToDoPage> {
         showDivider: index < _dones.length,
         onChanged: (_) {},
         onDelete: () {},
+        onRename: (_) {},
       ),
       duration: const Duration(milliseconds: 220),
     );
@@ -100,6 +102,7 @@ class _ToDoPageState extends State<ToDoPage> {
         showDivider: index < _todos.length,
         onChanged: (_) {},
         onDelete: () {},
+        onRename: (_) {},
       ),
       duration: const Duration(milliseconds: 220),
     );
@@ -117,6 +120,7 @@ class _ToDoPageState extends State<ToDoPage> {
         showDivider: index < _dones.length,
         onChanged: (_) {},
         onDelete: () {},
+        onRename: (_) {},
       ),
       duration: const Duration(milliseconds: 220),
     );
@@ -130,12 +134,20 @@ class _ToDoPageState extends State<ToDoPage> {
     required bool showDivider,
     required ValueChanged<bool> onChanged,
     required VoidCallback onDelete,
+    required ValueChanged<String> onRename,
   }) {
     return SizeTransition(
       sizeFactor: CurvedAnimation(parent: animation, curve: Curves.easeOut),
       child: FadeTransition(
         opacity: animation,
-        child: EntryRow(name: name, isDone: isDone, showDivider: showDivider, onChanged: onChanged, onDelete: onDelete),
+        child: EntryRow(
+          name: name,
+          isDone: isDone,
+          showDivider: showDivider,
+          onChanged: onChanged,
+          onDelete: onDelete,
+          onRename: onRename,
+        ),
       ),
     );
   }
@@ -191,6 +203,9 @@ class _ToDoPageState extends State<ToDoPage> {
                         if (checked) _moveTodoToDone(index);
                       },
                       onDelete: () => _removeTodo(index),
+                      onRename: (newName) {
+                        setState(() => _todos[index] = newName);
+                      },
                     );
                   },
                 ),
@@ -230,6 +245,9 @@ class _ToDoPageState extends State<ToDoPage> {
                           if (!checked) _moveDoneToTodo(index);
                         },
                         onDelete: () => _removeDone(index),
+                        onRename: (newName) {
+                          setState(() => _dones[index] = newName);
+                        },
                       );
                     },
                   ),
