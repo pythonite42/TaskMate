@@ -9,12 +9,14 @@ class EntryRow extends StatelessWidget {
     required this.isDone,
     this.showDivider = false,
     required this.onChanged,
+    required this.onDelete,
   });
 
   final String name;
   final bool isDone;
   final bool showDivider;
   final ValueChanged<bool> onChanged;
+  final VoidCallback onDelete;
 
   @override
   Widget build(BuildContext context) {
@@ -43,7 +45,7 @@ class EntryRow extends StatelessWidget {
                 ),
               ),
               IconButton(
-                onPressed: () {},
+                onPressed: onDelete,
                 icon: Icon(Icons.delete, color: dividerColor),
               ),
             ],

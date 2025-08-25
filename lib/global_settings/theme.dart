@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 
 class AppTheme {
-  static const Color _primaryBlue = Color(0xFF1565C0); // strong blue
-  static const Color _primaryBlueDark = Color(0xFF0D47A1); // darker blue
-  static const Color _primaryBlueLight = Color(0xFF42A5F5); // lighter accent
+  static const Color _primaryBlue = Color(0xFF1565C0);
+  static const Color _primaryBlueDark = Color(0xFF0D47A1);
+  static const Color _primaryBlueLight = Color(0xFF42A5F5);
 
   static ThemeData lightTheme = ThemeData(
     useMaterial3: true,

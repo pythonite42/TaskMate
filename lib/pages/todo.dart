@@ -54,6 +54,7 @@ class _ToDoPageState extends State<ToDoPage> {
         animation: anim,
         showDivider: index < _todos.length,
         onChanged: (_) {},
+        onDelete: () {},
       ),
       duration: const Duration(milliseconds: 220),
     );
@@ -76,6 +77,7 @@ class _ToDoPageState extends State<ToDoPage> {
         animation: anim,
         showDivider: index < _dones.length,
         onChanged: (_) {},
+        onDelete: () {},
       ),
       duration: const Duration(milliseconds: 220),
     );
@@ -87,18 +89,53 @@ class _ToDoPageState extends State<ToDoPage> {
     });
   }
 
+  void _removeTodo(int index) {
+    final removed = _todos.removeAt(index);
+    _todoKey.currentState!.removeItem(
+      index,
+      (context, anim) => _animatedTile(
+        name: removed,
+        isDone: false,
+        animation: anim,
+        showDivider: index < _todos.length,
+        onChanged: (_) {},
+        onDelete: () {},
+      ),
+      duration: const Duration(milliseconds: 220),
+    );
+    setState(() {});
+  }
+
+  void _removeDone(int index) {
+    final removed = _dones.removeAt(index);
+    _doneKey.currentState!.removeItem(
+      index,
+      (context, anim) => _animatedTile(
+        name: removed,
+        isDone: true,
+        animation: anim,
+        showDivider: index < _dones.length,
+        onChanged: (_) {},
+        onDelete: () {},
+      ),
+      duration: const Duration(milliseconds: 220),
+    );
+    setState(() {});
+  }
+
   Widget _animatedTile({
     required String name,
     required bool isDone,
     required Animation<double> animation,
     required bool showDivider,
     required ValueChanged<bool> onChanged,
+    required VoidCallback onDelete,
   }) {
     return SizeTransition(
       sizeFactor: CurvedAnimation(parent: animation, curve: Curves.easeOut),
       child: FadeTransition(
         opacity: animation,
-        child: EntryRow(name: name, isDone: isDone, showDivider: showDivider, onChanged: onChanged),
+        child: EntryRow(name: name, isDone: isDone, showDivider: showDivider, onChanged: onChanged, onDelete: onDelete),
       ),
     );
   }
@@ -153,6 +190,7 @@ class _ToDoPageState extends State<ToDoPage> {
                       onChanged: (checked) {
                         if (checked) _moveTodoToDone(index);
                       },
+                      onDelete: () => _removeTodo(index),
                     );
                   },
                 ),
@@ -191,6 +229,7 @@ class _ToDoPageState extends State<ToDoPage> {
                         onChanged: (checked) {
                           if (!checked) _moveDoneToTodo(index);
                         },
+                        onDelete: () => _removeDone(index),
                       );
                     },
                   ),
