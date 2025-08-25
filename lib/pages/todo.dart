@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:to_do_list/global_settings/spacing.dart';
-import 'package:to_do_list/widgets/entry_row.dart';
+import 'package:to_do_list/widgets/add_entry.dart';
+import 'package:to_do_list/widgets/entry.dart';
 
 class ToDoPage extends StatefulWidget {
   const ToDoPage({super.key});
@@ -140,7 +141,7 @@ class _ToDoPageState extends State<ToDoPage> {
       sizeFactor: CurvedAnimation(parent: animation, curve: Curves.easeOut),
       child: FadeTransition(
         opacity: animation,
-        child: EntryRow(
+        child: Entry(
           name: name,
           isDone: isDone,
           showDivider: showDivider,
@@ -209,7 +210,14 @@ class _ToDoPageState extends State<ToDoPage> {
                     );
                   },
                 ),
-
+              AddEntry(
+                onAdd: (text) {
+                  final insertIndex = _todos.length;
+                  _todos.add(text);
+                  _todoKey.currentState!.insertItem(insertIndex, duration: const Duration(milliseconds: 280));
+                  setState(() {});
+                },
+              ),
               AppSpacing.lg.vSpace,
 
               Row(

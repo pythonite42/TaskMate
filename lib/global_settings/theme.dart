@@ -57,7 +57,7 @@ class AppTheme {
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
       fillColor: WidgetStateProperty.all(_primaryBlue),
     ),
-    dividerColor: Colors.black38,
+    dividerTheme: DividerThemeData(thickness: 0.5, color: Colors.black38),
   );
 
   static ThemeData darkTheme = ThemeData(
@@ -114,6 +114,6 @@ class AppTheme {
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
       fillColor: WidgetStateProperty.all(_primaryBlueLight),
     ),
-    dividerColor: Colors.white,
+    dividerTheme: DividerThemeData(thickness: 0.5, color: Colors.white, space: 1),
   );
 }

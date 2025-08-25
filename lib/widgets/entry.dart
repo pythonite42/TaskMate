@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:to_do_list/global_settings/spacing.dart';
 import 'package:to_do_list/widgets/custom_checkbox.dart';
 
-class EntryRow extends StatefulWidget {
-  const EntryRow({
+class Entry extends StatefulWidget {
+  const Entry({
     super.key,
     required this.name,
     required this.isDone,
@@ -21,10 +21,10 @@ class EntryRow extends StatefulWidget {
   final ValueChanged<String> onRename;
 
   @override
-  State<EntryRow> createState() => _EntryRowState();
+  State<Entry> createState() => _EntryState();
 }
 
-class _EntryRowState extends State<EntryRow> {
+class _EntryState extends State<Entry> {
   bool _editing = false;
   late final TextEditingController _controller = TextEditingController(text: widget.name);
   final FocusNode _focusNode = FocusNode();
@@ -65,7 +65,7 @@ class _EntryRowState extends State<EntryRow> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final textTheme = theme.textTheme;
-    final dividerColor = theme.dividerColor;
+    final dividerColor = theme.dividerTheme.color;
 
     final textStyle = textTheme.bodyLarge?.copyWith(
       color: widget.isDone ? dividerColor : textTheme.bodyLarge?.color,
@@ -128,7 +128,7 @@ class _EntryRowState extends State<EntryRow> {
             ],
           ),
         ),
-        if (widget.showDivider) Divider(height: 1, thickness: 0.5, color: dividerColor),
+        if (widget.showDivider) Divider(),
       ],
     );
   }
