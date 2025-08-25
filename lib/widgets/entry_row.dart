@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:to_do_list/spacing.dart';
+import 'package:to_do_list/global_settings/spacing.dart';
 import 'package:to_do_list/widgets/custom_checkbox.dart';
 
 class EntryRow extends StatelessWidget {

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:to_do_list/theme.dart';
-import 'package:to_do_list/todo_page.dart';
+import 'package:to_do_list/global_settings/theme.dart';
+import 'package:to_do_list/pages/todo.dart';
 
 void main() => runApp(const MainApp());
 
