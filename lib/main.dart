@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:to_do_list/spacing.dart';
 import 'package:to_do_list/theme.dart';
-import 'package:flutter/services.dart';
 
 void main() {
   runApp(const MainApp());
@@ -16,8 +16,8 @@ class MainApp extends StatelessWidget {
       title: 'ToDo App',
       theme: AppTheme.lightTheme,
       darkTheme: AppTheme.darkTheme,
-      themeMode: ThemeMode.system, // auto-switch with device
-      home: HomePage(),
+      themeMode: ThemeMode.system,
+      home: const HomePage(),
     );
   }
 }
@@ -30,31 +30,27 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
-  bool? showDoneEntries = true;
-  List? todoEntries;
-  List? doneEntries;
+  bool showDoneEntries = true;
+
+  final GlobalKey<AnimatedListState> _todoKey = GlobalKey<AnimatedListState>();
+  final GlobalKey<AnimatedListState> _doneKey = GlobalKey<AnimatedListState>();
+
+  List<String>? todoEntries;
+  List<String>? doneEntries;
 
   @override
   void initState() {
-    loadEntries();
     super.initState();
+    _loadEntries();
   }
 
-  Future loadEntries() async {
-    await Future.delayed(Duration(seconds: 2));
-    Map? data = {
-      "todo": ["Einkaufen", "Wäsche" /*  "Einkaufen", "Wäsche", "Einkaufen", "Wäsche", "Einkaufen", "Wäsche" */],
+  Future<void> _loadEntries() async {
+    await Future.delayed(const Duration(milliseconds: 600));
+    final Map? data = {
+      "todo": ["Einkaufen", "Wäsche" /* "Einkaufen", "Wäsche", "Einkaufen", "Wäsche", "Einkaufen", "Wäsche" */],
       "done": [
         "Putzen",
-        "Bett richten",
-        "Putzen",
-        "Bett richten",
-        "Putzen",
-        "Bett richten",
-        "Putzen",
-        "Bett richten",
-        "Putzen",
-        "Bett richten",
+        "Bett richten" /* "Putzen", "Bett richten", "Putzen", "Bett richten", "Putzen", "Bett richten" */,
       ],
     };
 
@@ -64,16 +60,81 @@ class _HomePageState extends State<HomePage> {
     });
   }
 
+  void _moveTodoToDone(int index) {
+    final item = todoEntries!.removeAt(index);
+
+    // animate removal from TODO list
+    _todoKey.currentState!.removeItem(
+      index,
+      (context, anim) => _animatedTile(
+        name: item,
+        isDone: false,
+        animation: anim,
+        showDivider: index < (todoEntries!.length), // was not last before remove
+        onChanged: (_) {},
+      ),
+      duration: const Duration(milliseconds: 220),
+    );
+
+    // insert into DONE with animation (after one microtask to avoid build re-entrancy)
+    Future.microtask(() {
+      final insertIndex = doneEntries!.length;
+      doneEntries!.add(item);
+      _doneKey.currentState!.insertItem(insertIndex, duration: const Duration(milliseconds: 280));
+    });
+  }
+
+  void _moveDoneToTodo(int index) {
+    final item = doneEntries!.removeAt(index);
+
+    _doneKey.currentState!.removeItem(
+      index,
+      (context, anim) => _animatedTile(
+        name: item,
+        isDone: true,
+        animation: anim,
+        showDivider: index < (doneEntries!.length),
+        onChanged: (_) {},
+      ),
+      duration: const Duration(milliseconds: 220),
+    );
+
+    Future.microtask(() {
+      final insertIndex = todoEntries!.length;
+      todoEntries!.add(item);
+      _todoKey.currentState!.insertItem(insertIndex, duration: const Duration(milliseconds: 280));
+    });
+  }
+
+  // -------------------- Animated tile builder --------------------
+  Widget _animatedTile({
+    required String name,
+    required bool isDone,
+    required Animation<double> animation,
+    required bool showDivider,
+    required ValueChanged<bool> onChanged,
+  }) {
+    return SizeTransition(
+      sizeFactor: CurvedAnimation(parent: animation, curve: Curves.easeOut),
+      child: FadeTransition(
+        opacity: animation,
+        child: EntryRow(name: name, isDone: isDone, showDivider: showDivider, onChanged: onChanged),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
+    final isLoading = todoEntries == null || doneEntries == null;
+
     return Scaffold(
-      body: (todoEntries == null && doneEntries == null)
+      body: isLoading
           ? Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  CircularProgressIndicator(color: Theme.of(context).primaryColor),
-                  const SizedBox(height: 20),
+                  CircularProgressIndicator(color: Theme.of(context).colorScheme.primary),
+                  AppSpacing.md.vSpace,
                   const Text("Einen Moment ..."),
                 ],
               ),
@@ -88,68 +149,69 @@ class _HomePageState extends State<HomePage> {
                       child: Text("Deine To-Do Liste", style: Theme.of(context).textTheme.headlineLarge),
                     ),
 
-                    if (todoEntries == null)
-                      Text("Fehler beim Laden der Aufgaben")
-                    else if (todoEntries?.isEmpty == true)
-                      Text("Alle Aufgaben erledigt")
+                    if (todoEntries!.isEmpty)
+                      const Text("Alle Aufgaben erledigt")
                     else
-                      for (int i = 0; i < todoEntries!.length; i++)
-                        EntryRow(
-                          name: todoEntries![i],
-                          isDone: false,
-                          showDivider: i < todoEntries!.length - 1,
-                          onChanged: (checked) {
-                            if (checked) {
-                              setState(() {
-                                final item = todoEntries!.removeAt(i);
-                                doneEntries!.add(item);
-                              });
-                            }
-                          },
-                        ),
-                    AppSpacing.md.vSpace,
+                      AnimatedList(
+                        key: _todoKey,
+                        initialItemCount: todoEntries!.length,
+                        primary: false,
+                        shrinkWrap: true,
+                        physics: const NeverScrollableScrollPhysics(),
+                        itemBuilder: (context, index, animation) {
+                          final name = todoEntries![index];
+                          return _animatedTile(
+                            name: name,
+                            isDone: false,
+                            animation: animation,
+                            showDivider: index < todoEntries!.length - 1,
+                            onChanged: (checked) {
+                              if (checked) _moveTodoToDone(index);
+                            },
+                          );
+                        },
+                      ),
+
+                    AppSpacing.lg.vSpace,
+
+                    // Toggle DONE visibility
                     Row(
                       children: [
-                        Checkbox(
-                          value: showDoneEntries,
-                          onChanged: (newValue) {
-                            setState(() {
-                              showDoneEntries = newValue;
-                            });
-                          },
-                        ),
-                        Text("Zeige erledigte Einträge"),
+                        Checkbox(value: showDoneEntries, onChanged: (v) => setState(() => showDoneEntries = v ?? true)),
+                        const Text("Zeige erledigte Einträge"),
                       ],
                     ),
-                    if (showDoneEntries == true)
-                      Column(
-                        children: [
-                          AppSpacing.lg.vSpace,
-                          Padding(
-                            padding: const EdgeInsets.all(AppSpacing.lg),
-                            child: Text("Erledigte Einträge", style: Theme.of(context).textTheme.headlineMedium),
-                          ),
-                          if (doneEntries == null)
-                            Text("Fehler beim Laden der Aufgaben")
-                          else if (doneEntries?.isEmpty == true)
-                            Text("Noch keine erledigten Aufgaben")
-                          else
-                            for (int i = 0; i < doneEntries!.length; i++)
-                              EntryRow(
-                                name: doneEntries![i],
-                                isDone: true,
-                                showDivider: i < doneEntries!.length - 1,
-                                onChanged: (checked) {
-                                  if (!checked) {
-                                    setState(() {
-                                      final item = doneEntries!.removeAt(i);
-                                      todoEntries!.add(item);
-                                    });
-                                  }
-                                },
-                              ),
-                        ],
+
+                    // ---------------- DONE LIST (AnimatedList) ----------------
+                    if (showDoneEntries) ...[
+                      AppSpacing.lg.vSpace,
+                      Padding(
+                        padding: const EdgeInsets.all(AppSpacing.lg),
+                        child: Text("Erledigte Einträge", style: Theme.of(context).textTheme.headlineMedium),
                       ),
+                      if (doneEntries!.isEmpty)
+                        const Text("Noch keine erledigten Aufgaben")
+                      else
+                        AnimatedList(
+                          key: _doneKey,
+                          initialItemCount: doneEntries!.length,
+                          primary: false,
+                          shrinkWrap: true,
+                          physics: const NeverScrollableScrollPhysics(),
+                          itemBuilder: (context, index, animation) {
+                            final name = doneEntries![index];
+                            return _animatedTile(
+                              name: name,
+                              isDone: true,
+                              animation: animation,
+                              showDivider: index < doneEntries!.length - 1,
+                              onChanged: (checked) {
+                                if (!checked) _moveDoneToTodo(index);
+                              },
+                            );
+                          },
+                        ),
+                    ],
                   ],
                 ),
               ),
@@ -158,6 +220,9 @@ class _HomePageState extends State<HomePage> {
   }
 }
 
+// ---------------------------------------------------------------
+// EntryRow passes onChanged outward (no state here)
+// ---------------------------------------------------------------
 class EntryRow extends StatelessWidget {
   const EntryRow({
     super.key,
@@ -174,6 +239,8 @@ class EntryRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final textTheme = Theme.of(context).textTheme;
+
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
@@ -182,32 +249,44 @@ class EntryRow extends StatelessWidget {
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              //Checkbox(value: isDone, shape: CircleBorder(), onChanged: (newValue) {}),
-              CustomCheckbox(value: isDone, onChanged: onChanged),
+              CustomCheckbox(value: isDone, onChanged: (v) => onChanged(v)),
               Expanded(
                 child: Text(
                   name,
-                  style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                    color: isDone ? Theme.of(context).dividerColor : Theme.of(context).textTheme.bodyLarge?.color,
+                  style: textTheme.bodyLarge?.copyWith(
+                    color: isDone
+                        ? Theme.of(context).dividerTheme.color ?? Theme.of(context).colorScheme.outline
+                        : textTheme.bodyLarge?.color,
                     decoration: isDone ? TextDecoration.lineThrough : null,
-                    decorationThickness: 1,
-                    decorationColor: Theme.of(context).dividerColor,
+                    decorationThickness: 1.5,
+                    decorationColor: Theme.of(context).dividerTheme.color ?? Theme.of(context).colorScheme.outline,
                   ),
                 ),
               ),
               IconButton(
-                onPressed: () {},
-                icon: Icon(Icons.delete, color: Theme.of(context).dividerColor),
+                onPressed: () {}, // delete etc.
+                icon: Icon(
+                  Icons.delete,
+                  color: Theme.of(context).dividerTheme.color ?? Theme.of(context).colorScheme.outline,
+                ),
               ),
             ],
           ),
         ),
-        if (showDivider) Divider(height: 1, thickness: 0.5, color: Theme.of(context).dividerColor),
+        if (showDivider)
+          Divider(
+            height: 1,
+            thickness: 0.5,
+            color: Theme.of(context).dividerTheme.color ?? Theme.of(context).colorScheme.outlineVariant,
+          ),
       ],
     );
   }
 }
 
+// ---------------------------------------------------------------
+// Your CustomCheckbox (unchanged)
+// ---------------------------------------------------------------
 class CustomCheckbox extends StatefulWidget {
   const CustomCheckbox({
     super.key,
@@ -221,8 +300,8 @@ class CustomCheckbox extends StatefulWidget {
 
   final bool value;
   final ValueChanged<bool> onChanged;
-  final double size; // 24–28 works great
-  final double borderRadius; // rounded corner checkbox
+  final double size;
+  final double borderRadius;
   final String? semanticLabel;
   final bool enableHaptics;
 
@@ -259,13 +338,11 @@ class _CustomCheckboxState extends State<CustomCheckbox> with SingleTickerProvid
     final scheme = Theme.of(context).colorScheme;
     final isChecked = widget.value;
 
-    // Colors
     final outline = scheme.outlineVariant;
-    final bgUnchecked = Theme.of(context).colorScheme.surface;
+    final bgUnchecked = scheme.surface;
     final checkColor = scheme.onPrimary;
 
-    // Subtle glow when checked / hovered
-    final List<BoxShadow> glow = isChecked
+    final glow = isChecked
         ? [
             BoxShadow(
               color: scheme.primary.withOpacity(_hovered ? 0.45 : 0.32),
@@ -304,11 +381,11 @@ class _CustomCheckboxState extends State<CustomCheckbox> with SingleTickerProvid
       onShowFocusHighlight: (f) => setState(() => _focused = f),
       onShowHoverHighlight: (h) => setState(() => _hovered = h),
       mouseCursor: SystemMouseCursors.click,
-      shortcuts: const <ShortcutActivator, Intent>{
+      shortcuts: const {
         SingleActivator(LogicalKeyboardKey.enter): ActivateIntent(),
         SingleActivator(LogicalKeyboardKey.space): ActivateIntent(),
       },
-      actions: <Type, Action<Intent>>{
+      actions: {
         ActivateIntent: CallbackAction<Intent>(
           onInvoke: (intent) {
             _toggle();
@@ -329,7 +406,6 @@ class _CustomCheckboxState extends State<CustomCheckbox> with SingleTickerProvid
             highlightColor: scheme.primary.withOpacity(0.10),
             splashColor: scheme.primary.withOpacity(0.15),
             child: Padding(
-              // Keep touch target ~48x48 while visual box is smaller
               padding: const EdgeInsets.all(10),
               child: ScaleTransition(
                 scale: _controller,
@@ -339,7 +415,6 @@ class _CustomCheckboxState extends State<CustomCheckbox> with SingleTickerProvid
                   width: widget.size,
                   height: widget.size,
                   decoration: decoration.copyWith(
-                    // subtle focus ring
                     boxShadow: [
                       ...glow,
                       if (_focused)
@@ -362,12 +437,7 @@ class _CustomCheckboxState extends State<CustomCheckbox> with SingleTickerProvid
                               size: widget.size * 0.72,
                               color: checkColor,
                             )
-                          : Icon(
-                              Icons.check_rounded,
-                              key: const ValueKey('unchecked'),
-                              size: widget.size * 0.72,
-                              color: Colors.transparent,
-                            ),
+                          : const SizedBox.shrink(key: ValueKey('unchecked')),
                     ),
                   ),
                 ),
