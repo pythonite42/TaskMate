@@ -6,6 +6,8 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 
+enum DataSource { api, local }
+
 class ToDoPage extends StatefulWidget {
   const ToDoPage({super.key});
 
@@ -14,8 +16,8 @@ class ToDoPage extends StatefulWidget {
 }
 
 class _ToDoPageState extends State<ToDoPage> {
-  final _todoKey = GlobalKey<AnimatedListState>();
-  final _doneKey = GlobalKey<AnimatedListState>();
+  GlobalKey<AnimatedListState> _todoKey = GlobalKey<AnimatedListState>();
+  GlobalKey<AnimatedListState> _doneKey = GlobalKey<AnimatedListState>();
 
   bool _showDone = true;
   bool _isLoading = true;
@@ -23,6 +25,8 @@ class _ToDoPageState extends State<ToDoPage> {
 
   final List<String> _todos = <String>[];
   final List<String> _dones = <String>[];
+
+  DataSource _source = DataSource.api;
 
   @override
   void initState() {
@@ -32,44 +36,67 @@ class _ToDoPageState extends State<ToDoPage> {
 
   Future<void> _loadEntries() async {
     setState(() {
+      //_isLoading is not set to true to avoid the loading screen on pull to refresh
       _hasError = false;
     });
     //await Future<void>.delayed(const Duration(seconds: 2));
 
-    final url = Uri.parse(
-      dotenv.env['DATA_URL'] ?? "",
-    ); //The URL for the endpoint should not be hardcoded and then pushed to git. For this to work there needs to be a file called .env at the root of the project, with this content: DATA_URL=https://myPlaceholder.com
-
     try {
-      final response = await http.get(url, headers: {'Accept': 'application/json', 'Content-Type': 'application/json'});
-      if (response.statusCode == 200) {
-        final decoded = jsonDecode(response.body) as List;
-        final todos = <String>[];
-        final dones = <String>[];
-
-        for (final entry in decoded) {
-            (entry['completed'] ? dones : todos).add(entry['title']);
-        }
-        setState(() {
-          _todos
-            ..clear()
-            ..addAll(todos);
-          _dones
-            ..clear()
-            ..addAll(dones);
-          _isLoading = false;
-          _hasError = false;
-        });
+      if (_source == DataSource.api) {
+        await _loadEntriesFromApi();
       } else {
-        throw Exception('Failed with status: ${response.statusCode}');
+        await _loadEntriesFromLocal();
       }
     } catch (e) {
       debugPrint('Error: $e');
-      setState(() {
-        _isLoading = false;
-        _hasError = true;
-      });
+      setState(() => _hasError = true);
+    } finally {
+      setState(() => _isLoading = false);
     }
+  }
+
+  Future<void> _loadEntriesFromApi() async {
+    final url = Uri.parse(
+      dotenv.env['DATA_URL'] ?? "",
+    ); //The URL for the endpoint should not be hardcoded and then pushed to git. For this to work there needs to be a file called .env at the root of the project, with this content: DATA_URL=https://myPlaceholder.com
+    final response = await http.get(url, headers: {'Accept': 'application/json', 'Content-Type': 'application/json'});
+    if (response.statusCode != 200) {
+      throw Exception('Failed with status: ${response.statusCode}');
+    }
+    final decoded = jsonDecode(response.body) as List;
+    _applyDecoded(decoded);
+  }
+
+  Future<void> _loadEntriesFromLocal() async {
+    final decoded = [
+      {"title": "Milch kaufen", "completed": false, "userId": 9},
+      {"title": "Staubsaugen", "completed": true, "userId": 9},
+      {"title": "Anderer User", "completed": false, "userId": 1},
+    ];
+
+    _applyDecoded(decoded);
+  }
+
+  void _applyDecoded(List decoded) {
+    final todos = <String>[];
+    final dones = <String>[];
+
+    for (final entry in decoded) {
+      if (entry["userId"] == 9) {
+        (entry['completed'] ? dones : todos).add(entry['title']);
+      }
+    }
+
+    setState(() {
+      _todoKey = GlobalKey<AnimatedListState>();
+      _doneKey = GlobalKey<AnimatedListState>();
+      _todos
+        ..clear()
+        ..addAll(todos);
+      _dones
+        ..clear()
+        ..addAll(dones);
+    });
   }
 
   void _moveTodoToDone(int index) {
@@ -184,7 +211,26 @@ class _ToDoPageState extends State<ToDoPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('TaskMate')),
+      appBar: AppBar(
+        title: const Text('TaskMate'),
+        bottom: PreferredSize(
+          preferredSize: const Size.fromHeight(52),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 8),
+            child: SegmentedButton<DataSource>(
+              segments: const [
+                ButtonSegment(value: DataSource.api, label: Text('Cloud Daten'), icon: Icon(Icons.cloud_outlined)),
+                ButtonSegment(value: DataSource.local, label: Text('Lokale Daten'), icon: Icon(Icons.storage_outlined)),
+              ],
+              selected: {_source},
+              onSelectionChanged: (sel) {
+                setState(() => _source = sel.first);
+                _loadEntries();
+              },
+            ),
+          ),
+        ),
+      ),
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.all(AppSpacing.lg),
