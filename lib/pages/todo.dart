@@ -32,7 +32,7 @@ class _ToDoPageState extends State<ToDoPage> {
 
   Future<void> _loadEntries() async {
     setState(() {
-      _isLoading = true;
+      _hasError = false;
     });
     //await Future<void>.delayed(const Duration(seconds: 2));
 
@@ -220,14 +220,25 @@ class _ToDoPageState extends State<ToDoPage> {
                       const Text('Die Daten konnten nicht geladen werden'),
                       Padding(
                         padding: const EdgeInsets.symmetric(vertical: AppSpacing.lg),
-                        child: ElevatedButton(onPressed: _loadEntries, child: const Text("Neu Laden")),
+                        child: ElevatedButton(
+                          onPressed: () {
+                            setState(() {
+                              _isLoading = true;
+                            });
+                            _loadEntries();
+                          },
+                          child: const Text("Neu Laden"),
+                        ),
                       ),
                     ],
                   ),
                 )
               else
                 Expanded(
+                  child: RefreshIndicator(
+                    onRefresh: _loadEntries, // <- your reload
                   child: SingleChildScrollView(
+                      physics: const AlwaysScrollableScrollPhysics(),
                     child: Column(
                       children: [
                         if (_todos.isEmpty)
@@ -311,6 +322,7 @@ class _ToDoPageState extends State<ToDoPage> {
                             ),
                         ],
                       ],
+                      ),
                     ),
                   ),
                 ),
