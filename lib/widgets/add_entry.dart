@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:to_do_list/global_settings/spacing.dart';
+import 'package:task_mate/global_settings/spacing.dart';
 
 class AddEntry extends StatefulWidget {
   const AddEntry({super.key, required this.onAdd});

@@ -28,8 +28,8 @@ class AppTheme {
     scaffoldBackgroundColor: _lightSurface,
     appBarTheme: const AppBarTheme(
       elevation: 0,
-      backgroundColor: Colors.white,
-      foregroundColor: Colors.black87,
+      backgroundColor: _primaryGreen,
+      foregroundColor: Colors.white,
       centerTitle: true,
     ),
     textTheme: const TextTheme(

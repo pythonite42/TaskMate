@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:to_do_list/global_settings/spacing.dart';
-import 'package:to_do_list/widgets/add_entry.dart';
-import 'package:to_do_list/widgets/entry.dart';
+import 'package:task_mate/global_settings/spacing.dart';
+import 'package:task_mate/widgets/add_entry.dart';
+import 'package:task_mate/widgets/entry.dart';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:flutter_dotenv/flutter_dotenv.dart';
@@ -183,154 +183,139 @@ class _ToDoPageState extends State<ToDoPage> {
 
   @override
   Widget build(BuildContext context) {
-    if (_isLoading) {
-      return Scaffold(
-        body: Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              CircularProgressIndicator(color: Theme.of(context).colorScheme.primary),
-              AppSpacing.md.vSpace,
-              const Text('Einen Moment ...'),
-            ],
-          ),
-        ),
-      );
-    }
-
-    final theme = Theme.of(context);
-    final textTheme = theme.textTheme;
-
     return Scaffold(
-      body: Padding(
-        padding: const EdgeInsets.all(AppSpacing.lg),
-        child: Center(
-          child: Column(
-            children: [
+      appBar: AppBar(title: const Text('TaskMate')),
+      body: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.all(AppSpacing.lg),
+          child: _isLoading
+              ? _buildLoading(context)
+              : _hasError
+              ? _buildError(context)
+              : _buildSuccess(context),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildLoading(BuildContext context) {
+    return Center(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [CircularProgressIndicator(), AppSpacing.md.vSpace, const Text('Einen Moment ...')],
+      ),
+    );
+  }
+
+  Widget _buildError(BuildContext context) {
+    return Center(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const Text('Die Daten konnten nicht geladen werden'),
+          const SizedBox(height: 16),
+          ElevatedButton(
+            onPressed: () {
+              setState(() => _isLoading = true);
+              _loadEntries();
+            },
+            child: const Text('Neu Laden'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSuccess(BuildContext context) {
+    final textTheme = Theme.of(context).textTheme;
+
+    return RefreshIndicator(
+      onRefresh: _loadEntries,
+      child: SingleChildScrollView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        child: Column(
+          children: [
+            if (_todos.isEmpty)
+              const Text('Alle Aufgaben erledigt')
+            else
+              AnimatedList(
+                key: _todoKey,
+                initialItemCount: _todos.length,
+                primary: false,
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                itemBuilder: (context, index, animation) {
+                  final name = _todos[index];
+                  return _animatedTile(
+                    name: name,
+                    isDone: false,
+                    animation: animation,
+                    showDivider: index < _todos.length - 1,
+                    onChanged: (checked) {
+                      if (checked) _moveTodoToDone(index);
+                    },
+                    onDelete: () => _removeTodo(index),
+                    onRename: (newName) {
+                      setState(() => _todos[index] = newName);
+                    },
+                  );
+                },
+              ),
+            AddEntry(
+              onAdd: (text) {
+                final insertIndex = _todos.length;
+                _todos.add(text);
+                _todoKey.currentState!.insertItem(insertIndex, duration: const Duration(milliseconds: 280));
+                setState(() {});
+              },
+            ),
+            AppSpacing.lg.vSpace,
+
+            Row(
+              children: [
+                Checkbox(
+                  value: _showDone,
+                  //TODO fillColor: WidgetStateProperty.all(theme.colorScheme.surface),
+                  onChanged: (newValue) => setState(() => _showDone = newValue ?? true),
+                ),
+                const Text('Zeige erledigte Einträge'),
+              ],
+            ),
+
+            if (_showDone) ...[
+              AppSpacing.lg.vSpace,
               Padding(
                 padding: const EdgeInsets.all(AppSpacing.lg),
-                child: Text('Deine To-Do Liste', style: textTheme.headlineLarge),
+                child: Text('Erledigte Einträge', style: textTheme.headlineMedium),
               ),
-
-              if (_hasError)
-                Expanded(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      const Text('Die Daten konnten nicht geladen werden'),
-                      Padding(
-                        padding: const EdgeInsets.symmetric(vertical: AppSpacing.lg),
-                        child: ElevatedButton(
-                          onPressed: () {
-                            setState(() {
-                              _isLoading = true;
-                            });
-                            _loadEntries();
-                          },
-                          child: const Text("Neu Laden"),
-                        ),
-                      ),
-                    ],
-                  ),
-                )
+              if (_dones.isEmpty)
+                const Text('Noch keine erledigten Aufgaben')
               else
-                Expanded(
-                  child: RefreshIndicator(
-                    onRefresh: _loadEntries, // <- your reload
-                    child: SingleChildScrollView(
-                      physics: const AlwaysScrollableScrollPhysics(),
-                      child: Column(
-                        children: [
-                          if (_todos.isEmpty)
-                            const Text('Alle Aufgaben erledigt')
-                          else
-                            AnimatedList(
-                              key: _todoKey,
-                              initialItemCount: _todos.length,
-                              primary: false,
-                              shrinkWrap: true,
-                              physics: const NeverScrollableScrollPhysics(),
-                              itemBuilder: (context, index, animation) {
-                                final name = _todos[index];
-                                return _animatedTile(
-                                  name: name,
-                                  isDone: false,
-                                  animation: animation,
-                                  showDivider: index < _todos.length - 1,
-                                  onChanged: (checked) {
-                                    if (checked) _moveTodoToDone(index);
-                                  },
-                                  onDelete: () => _removeTodo(index),
-                                  onRename: (newName) {
-                                    setState(() => _todos[index] = newName);
-                                  },
-                                );
-                              },
-                            ),
-                          AddEntry(
-                            onAdd: (text) {
-                              final insertIndex = _todos.length;
-                              _todos.add(text);
-                              _todoKey.currentState!.insertItem(
-                                insertIndex,
-                                duration: const Duration(milliseconds: 280),
-                              );
-                              setState(() {});
-                            },
-                          ),
-                          AppSpacing.lg.vSpace,
-
-                          Row(
-                            children: [
-                              Checkbox(
-                                value: _showDone,
-                                //TODO fillColor: WidgetStateProperty.all(theme.colorScheme.surface),
-                                onChanged: (newValue) => setState(() => _showDone = newValue ?? true),
-                              ),
-                              const Text('Zeige erledigte Einträge'),
-                            ],
-                          ),
-
-                          if (_showDone) ...[
-                            AppSpacing.lg.vSpace,
-                            Padding(
-                              padding: const EdgeInsets.all(AppSpacing.lg),
-                              child: Text('Erledigte Einträge', style: textTheme.headlineMedium),
-                            ),
-                            if (_dones.isEmpty)
-                              const Text('Noch keine erledigten Aufgaben')
-                            else
-                              AnimatedList(
-                                key: _doneKey,
-                                initialItemCount: _dones.length,
-                                primary: false,
-                                shrinkWrap: true,
-                                physics: const NeverScrollableScrollPhysics(),
-                                itemBuilder: (context, index, animation) {
-                                  final name = _dones[index];
-                                  return _animatedTile(
-                                    name: name,
-                                    isDone: true,
-                                    animation: animation,
-                                    showDivider: index < _dones.length - 1,
-                                    onChanged: (checked) {
-                                      if (!checked) _moveDoneToTodo(index);
-                                    },
-                                    onDelete: () => _removeDone(index),
-                                    onRename: (newName) {
-                                      setState(() => _dones[index] = newName);
-                                    },
-                                  );
-                                },
-                              ),
-                          ],
-                        ],
-                      ),
-                    ),
-                  ),
+                AnimatedList(
+                  key: _doneKey,
+                  initialItemCount: _dones.length,
+                  primary: false,
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  itemBuilder: (context, index, animation) {
+                    final name = _dones[index];
+                    return _animatedTile(
+                      name: name,
+                      isDone: true,
+                      animation: animation,
+                      showDivider: index < _dones.length - 1,
+                      onChanged: (checked) {
+                        if (!checked) _moveDoneToTodo(index);
+                      },
+                      onDelete: () => _removeDone(index),
+                      onRename: (newName) {
+                        setState(() => _dones[index] = newName);
+                      },
+                    );
+                  },
                 ),
             ],
-          ),
+          ],
         ),
       ),
     );

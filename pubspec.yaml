@@ -1,4 +1,4 @@
-name: to_do_list
+name: task_mate
 description: "A simple to do list application"
 publish_to: 'none'
 version: 0.1.0
