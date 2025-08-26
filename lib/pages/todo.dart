@@ -4,6 +4,7 @@ import 'package:to_do_list/widgets/add_entry.dart';
 import 'package:to_do_list/widgets/entry.dart';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 class ToDoPage extends StatefulWidget {
   const ToDoPage({super.key});
@@ -31,7 +32,10 @@ class _ToDoPageState extends State<ToDoPage> {
   Future<void> _loadEntries() async {
     //await Future<void>.delayed(const Duration(seconds: 2));
 
-    final url = Uri.parse('https://jsonplaceholder.typicode.com/todos');
+    final url = Uri.parse(
+      dotenv.env['DATA_URL'] ?? "",
+    ); //The URL for the endpoint should not be hardcoded and then pushed to git. For this to work there needs to be a file called .env at the root of the project, with this content: DATA_URL=https://myPlaceholder.com
+
     try {
       final response = await http.get(url, headers: {'Accept': 'application/json', 'Content-Type': 'application/json'});
       if (response.statusCode == 200) {
