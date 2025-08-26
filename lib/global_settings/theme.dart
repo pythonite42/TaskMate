@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 class AppTheme {
-  // Greens (Material-ish: success/progress)
+  // Greens
   static const Color _primaryGreen = Color(0xFF16A34A); // ~green-600
   static const Color _primaryGreenDark = Color(0xFF166534); // ~green-800
   static const Color _primaryGreenLight = Color(0xFF4ADE80); // ~green-400
@@ -18,11 +18,11 @@ class AppTheme {
     colorScheme: ColorScheme.light(
       primary: _primaryGreen,
       onPrimary: Colors.white,
-      secondary: _primaryGreenLight, // subtle accents (chips, FAB, etc.)
+      secondary: _primaryGreenLight,
       onSecondary: Colors.white,
       surface: _lightSurface,
       onSurface: Colors.black87,
-      error: Color(0xFFDC2626), // red-600
+      error: Color(0xFFDC2626),
       onError: Colors.white,
     ),
     scaffoldBackgroundColor: _lightSurface,
@@ -77,7 +77,7 @@ class AppTheme {
       onSecondary: Colors.white,
       surface: _darkSurface,
       onSurface: Colors.white70,
-      error: Color(0xFFF87171), // red-400
+      error: Color(0xFFF87171),
       onError: Colors.black,
     ),
     scaffoldBackgroundColor: _darkBg,
