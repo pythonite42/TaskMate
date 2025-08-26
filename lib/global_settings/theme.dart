@@ -1,25 +1,31 @@
 import 'package:flutter/material.dart';
 
 class AppTheme {
-  static const Color _primaryBlue = Color(0xFF1565C0);
-  static const Color _primaryBlueDark = Color(0xFF0D47A1);
-  static const Color _primaryBlueLight = Color(0xFF42A5F5);
+  // Greens (Material-ish: success/progress)
+  static const Color _primaryGreen = Color(0xFF16A34A); // ~green-600
+  static const Color _primaryGreenDark = Color(0xFF166534); // ~green-800
+  static const Color _primaryGreenLight = Color(0xFF4ADE80); // ~green-400
+
+  // Neutrals
+  static const Color _lightSurface = Color(0xFFF8FAFC); // soft neutral
+  static const Color _darkSurface = Color(0xFF1E1E1E);
+  static const Color _darkBg = Color(0xFF121212);
 
   static ThemeData lightTheme = ThemeData(
     useMaterial3: true,
     brightness: Brightness.light,
-    primaryColor: _primaryBlue,
+    primaryColor: _primaryGreen,
     colorScheme: ColorScheme.light(
-      primary: _primaryBlue,
+      primary: _primaryGreen,
       onPrimary: Colors.white,
-      secondary: _primaryBlueLight,
+      secondary: _primaryGreenLight, // subtle accents (chips, FAB, etc.)
       onSecondary: Colors.white,
-      surface: const Color(0xFFF6F9FC),
+      surface: _lightSurface,
       onSurface: Colors.black87,
-      error: Colors.red.shade700,
+      error: Color(0xFFDC2626), // red-600
       onError: Colors.white,
     ),
-    scaffoldBackgroundColor: const Color(0xFFF6F9FC),
+    scaffoldBackgroundColor: _lightSurface,
     appBarTheme: const AppBarTheme(
       elevation: 0,
       backgroundColor: Colors.white,
@@ -41,7 +47,7 @@ class AppTheme {
     ),
     elevatedButtonTheme: ElevatedButtonThemeData(
       style: ElevatedButton.styleFrom(
-        backgroundColor: _primaryBlue,
+        backgroundColor: _primaryGreen,
         foregroundColor: Colors.white,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
@@ -55,27 +61,26 @@ class AppTheme {
     ),
     checkboxTheme: CheckboxThemeData(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
-      fillColor: WidgetStateProperty.all(_primaryBlue),
+      fillColor: WidgetStateProperty.all(_primaryGreen),
     ),
-    dividerTheme: DividerThemeData(thickness: 0.5, color: Colors.black38),
+    dividerTheme: const DividerThemeData(thickness: 0.5, color: Colors.black38),
   );
 
   static ThemeData darkTheme = ThemeData(
     useMaterial3: true,
     brightness: Brightness.dark,
-    primaryColor: _primaryBlueDark,
+    primaryColor: _primaryGreenDark,
     colorScheme: ColorScheme.dark(
-      primary: _primaryBlueLight,
+      primary: _primaryGreenLight, // brighter green reads well on dark
       onPrimary: Colors.white,
-      secondary: _primaryBlue,
+      secondary: _primaryGreen, // deeper accent to avoid neon glow
       onSecondary: Colors.white,
-      surface: const Color(0xFF1E1E1E),
+      surface: _darkSurface,
       onSurface: Colors.white70,
-      //TODO remove: background: const Color(0xFF121212),
-      error: Colors.red.shade400,
+      error: Color(0xFFF87171), // red-400
       onError: Colors.black,
     ),
-    scaffoldBackgroundColor: const Color(0xFF121212),
+    scaffoldBackgroundColor: _darkBg,
     appBarTheme: const AppBarTheme(
       elevation: 0,
       backgroundColor: Color(0xFF1E1E1E),
@@ -97,7 +102,7 @@ class AppTheme {
     ),
     elevatedButtonTheme: ElevatedButtonThemeData(
       style: ElevatedButton.styleFrom(
-        backgroundColor: _primaryBlueLight,
+        backgroundColor: _primaryGreenLight,
         foregroundColor: Colors.white,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
@@ -108,12 +113,12 @@ class AppTheme {
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       elevation: 2,
       margin: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
-      color: const Color(0xFF1E1E1E),
+      color: _darkSurface,
     ),
     checkboxTheme: CheckboxThemeData(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
-      fillColor: WidgetStateProperty.all(_primaryBlueLight),
+      fillColor: WidgetStateProperty.all(_primaryGreenLight),
     ),
-    dividerTheme: DividerThemeData(thickness: 0.5, color: Colors.white, space: 1),
+    dividerTheme: const DividerThemeData(thickness: 0.5, color: Colors.white, space: 1),
   );
 }

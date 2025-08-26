@@ -237,91 +237,94 @@ class _ToDoPageState extends State<ToDoPage> {
                 Expanded(
                   child: RefreshIndicator(
                     onRefresh: _loadEntries, // <- your reload
-                  child: SingleChildScrollView(
+                    child: SingleChildScrollView(
                       physics: const AlwaysScrollableScrollPhysics(),
-                    child: Column(
-                      children: [
-                        if (_todos.isEmpty)
-                          const Text('Alle Aufgaben erledigt')
-                        else
-                          AnimatedList(
-                            key: _todoKey,
-                            initialItemCount: _todos.length,
-                            primary: false,
-                            shrinkWrap: true,
-                            physics: const NeverScrollableScrollPhysics(),
-                            itemBuilder: (context, index, animation) {
-                              final name = _todos[index];
-                              return _animatedTile(
-                                name: name,
-                                isDone: false,
-                                animation: animation,
-                                showDivider: index < _todos.length - 1,
-                                onChanged: (checked) {
-                                  if (checked) _moveTodoToDone(index);
-                                },
-                                onDelete: () => _removeTodo(index),
-                                onRename: (newName) {
-                                  setState(() => _todos[index] = newName);
-                                },
-                              );
-                            },
-                          ),
-                        AddEntry(
-                          onAdd: (text) {
-                            final insertIndex = _todos.length;
-                            _todos.add(text);
-                            _todoKey.currentState!.insertItem(insertIndex, duration: const Duration(milliseconds: 280));
-                            setState(() {});
-                          },
-                        ),
-                        AppSpacing.lg.vSpace,
-
-                        Row(
-                          children: [
-                                              Checkbox(
-                    value: _showDone,
-                    //TODO fillColor: WidgetStateProperty.all(theme.colorScheme.surface),
-                    onChanged: (newValue) => setState(() => _showDone = newValue ?? true),
-),
-                            const Text('Zeige erledigte Einträge'),
-                          ],
-                  ),
-
-                        if (_showDone) ...[
-                          AppSpacing.lg.vSpace,
-                          Padding(
-                            padding: const EdgeInsets.all(AppSpacing.lg),
-                            child: Text('Erledigte Einträge', style: textTheme.headlineMedium),
-                          ),
-                          if (_dones.isEmpty)
-                            const Text('Noch keine erledigten Aufgaben')
+                      child: Column(
+                        children: [
+                          if (_todos.isEmpty)
+                            const Text('Alle Aufgaben erledigt')
                           else
                             AnimatedList(
-                              key: _doneKey,
-                              initialItemCount: _dones.length,
+                              key: _todoKey,
+                              initialItemCount: _todos.length,
                               primary: false,
                               shrinkWrap: true,
                               physics: const NeverScrollableScrollPhysics(),
                               itemBuilder: (context, index, animation) {
-                                final name = _dones[index];
+                                final name = _todos[index];
                                 return _animatedTile(
                                   name: name,
-                                  isDone: true,
+                                  isDone: false,
                                   animation: animation,
-                                  showDivider: index < _dones.length - 1,
+                                  showDivider: index < _todos.length - 1,
                                   onChanged: (checked) {
-                                    if (!checked) _moveDoneToTodo(index);
+                                    if (checked) _moveTodoToDone(index);
                                   },
-                                  onDelete: () => _removeDone(index),
+                                  onDelete: () => _removeTodo(index),
                                   onRename: (newName) {
-                                    setState(() => _dones[index] = newName);
+                                    setState(() => _todos[index] = newName);
                                   },
                                 );
                               },
                             ),
+                          AddEntry(
+                            onAdd: (text) {
+                              final insertIndex = _todos.length;
+                              _todos.add(text);
+                              _todoKey.currentState!.insertItem(
+                                insertIndex,
+                                duration: const Duration(milliseconds: 280),
+                              );
+                              setState(() {});
+                            },
+                          ),
+                          AppSpacing.lg.vSpace,
+
+                          Row(
+                            children: [
+                              Checkbox(
+                                value: _showDone,
+                                //TODO fillColor: WidgetStateProperty.all(theme.colorScheme.surface),
+                                onChanged: (newValue) => setState(() => _showDone = newValue ?? true),
+                              ),
+                              const Text('Zeige erledigte Einträge'),
+                            ],
+                          ),
+
+                          if (_showDone) ...[
+                            AppSpacing.lg.vSpace,
+                            Padding(
+                              padding: const EdgeInsets.all(AppSpacing.lg),
+                              child: Text('Erledigte Einträge', style: textTheme.headlineMedium),
+                            ),
+                            if (_dones.isEmpty)
+                              const Text('Noch keine erledigten Aufgaben')
+                            else
+                              AnimatedList(
+                                key: _doneKey,
+                                initialItemCount: _dones.length,
+                                primary: false,
+                                shrinkWrap: true,
+                                physics: const NeverScrollableScrollPhysics(),
+                                itemBuilder: (context, index, animation) {
+                                  final name = _dones[index];
+                                  return _animatedTile(
+                                    name: name,
+                                    isDone: true,
+                                    animation: animation,
+                                    showDivider: index < _dones.length - 1,
+                                    onChanged: (checked) {
+                                      if (!checked) _moveDoneToTodo(index);
+                                    },
+                                    onDelete: () => _removeDone(index),
+                                    onRename: (newName) {
+                                      setState(() => _dones[index] = newName);
+                                    },
+                                  );
+                                },
+                              ),
+                          ],
                         ],
-                      ],
                       ),
                     ),
                   ),
