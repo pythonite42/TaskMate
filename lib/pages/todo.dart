@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:to_do_list/global_settings/spacing.dart';
 import 'package:to_do_list/widgets/add_entry.dart';
 import 'package:to_do_list/widgets/entry.dart';
+import 'dart:convert';
+import 'package:http/http.dart' as http;
 
 class ToDoPage extends StatefulWidget {
   const ToDoPage({super.key});
@@ -27,21 +29,34 @@ class _ToDoPageState extends State<ToDoPage> {
   }
 
   Future<void> _loadEntries() async {
-    await Future<void>.delayed(const Duration(seconds: 2));
-    const data = {
-      'todo': ['Einkaufen', 'Wäsche', 'Einkaufen', 'Wäsche', 'Einkaufen', 'Wäsche', 'Einkaufen', 'Wäsche'],
-      'done': ['Putzen', 'Bett richten', 'Putzen', 'Bett richten', 'Putzen', 'Bett richten', 'Putzen', 'Bett richten'],
-    };
+    //await Future<void>.delayed(const Duration(seconds: 2));
 
-    setState(() {
-      _todos
-        ..clear()
-        ..addAll(data['todo'] ?? []);
-      _dones
-        ..clear()
-        ..addAll(data['done'] ?? []);
-      _isLoading = false;
-    });
+    final url = Uri.parse('https://jsonplaceholder.typicode.com/todos');
+    try {
+      final response = await http.get(url, headers: {'Accept': 'application/json', 'Content-Type': 'application/json'});
+      if (response.statusCode == 200) {
+        final decoded = jsonDecode(response.body) as List;
+        final todos = <String>[];
+        final dones = <String>[];
+
+        for (final entry in decoded) {
+          (entry['completed'] ? dones : todos).add(entry['title']);
+        }
+        setState(() {
+          _todos
+            ..clear()
+            ..addAll(todos);
+          _dones
+            ..clear()
+            ..addAll(dones);
+          _isLoading = false;
+        });
+      } else {
+        throw Exception('Failed with status: ${response.statusCode}');
+      }
+    } catch (e) {
+      debugPrint('Error: $e');
+    }
   }
 
   void _moveTodoToDone(int index) {
@@ -222,7 +237,11 @@ class _ToDoPageState extends State<ToDoPage> {
 
               Row(
                 children: [
-                  Checkbox(value: _showDone, onChanged: (newValue) => setState(() => _showDone = newValue ?? true)),
+                  Checkbox(
+                    value: _showDone,
+                    //TODO fillColor: WidgetStateProperty.all(theme.colorScheme.surface),
+                    onChanged: (newValue) => setState(() => _showDone = newValue ?? true),
+                  ),
                   const Text('Zeige erledigte Einträge'),
                 ],
               ),
