@@ -24,7 +24,7 @@ class AppTheme {
       onSurface: Colors.black87,
       error: Color(0xFFDC2626),
       onError: Colors.white,
-      secondaryContainer: Color(0xFFCCCDCB),
+      secondaryContainer: Colors.black38,
     ),
     scaffoldBackgroundColor: _lightSurface,
     appBarTheme: const AppBarTheme(
@@ -66,6 +66,12 @@ class AppTheme {
       fillColor: WidgetStateProperty.all(_primaryGreen),
     ),
     dividerTheme: const DividerThemeData(thickness: 0.5, color: Colors.black38),
+    snackBarTheme: const SnackBarThemeData(
+      backgroundColor: Color(0xFF1F2937),
+      contentTextStyle: TextStyle(color: Colors.white, fontSize: 14),
+      behavior: SnackBarBehavior.floating,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.all(Radius.circular(12))),
+    ),
   );
 
   static ThemeData darkTheme = ThemeData(
@@ -73,15 +79,15 @@ class AppTheme {
     brightness: Brightness.dark,
     primaryColor: _primaryGreenDark,
     colorScheme: ColorScheme.dark(
-      primary: _primaryGreenLight, // brighter green reads well on dark
+      primary: _primaryGreen, // brighter green reads well on dark
       onPrimary: Colors.white,
-      secondary: _primaryGreen, // deeper accent to avoid neon glow
+      secondary: _primaryGreenLight, // deeper accent to avoid neon glow
       onSecondary: Colors.white,
       surface: _darkSurface,
       onSurface: Colors.white70,
       error: Color(0xFFF87171),
       onError: Colors.black,
-      secondaryContainer: Color(0xFFCCCDCB),
+      secondaryContainer: Colors.black38,
     ),
     scaffoldBackgroundColor: _darkBg,
     appBarTheme: const AppBarTheme(
@@ -124,5 +130,11 @@ class AppTheme {
       fillColor: WidgetStateProperty.all(_primaryGreenLight),
     ),
     dividerTheme: const DividerThemeData(thickness: 0.5, color: Colors.white, space: 1),
+    snackBarTheme: const SnackBarThemeData(
+      backgroundColor: Color(0xFFE5E7EB),
+      contentTextStyle: TextStyle(color: Colors.black87, fontSize: 14),
+      behavior: SnackBarBehavior.floating,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.all(Radius.circular(12))),
+    ),
   );
 }

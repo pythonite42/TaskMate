@@ -38,7 +38,12 @@ class _ToDoPageState extends State<ToDoPage> {
 
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(message), behavior: SnackBarBehavior.floating, duration: const Duration(seconds: 5)),
+        SnackBar(
+          content: Text(message),
+          behavior: SnackBarBehavior.floating,
+          duration: const Duration(seconds: 5),
+          backgroundColor: Theme.of(context).colorScheme.error,
+        ),
       );
     });
   }
@@ -75,6 +80,7 @@ class _ToDoPageState extends State<ToDoPage> {
     final theme = Theme.of(context);
     return Scaffold(
       appBar: AppBar(
+        backgroundColor: theme.primaryColor,
         centerTitle: true,
         title: Padding(
           padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
