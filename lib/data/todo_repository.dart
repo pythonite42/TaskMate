@@ -160,28 +160,23 @@ class ToDoRepository {
   }
 
   void _synchronizeWithCloud(ToDo todo, {required _Operation operation}) async {
-    if (operation == _Operation.upsert) {
-      try {
+    String errorMessage = "";
+    try {
+      if (operation == _Operation.upsert) {
+        errorMessage =
+            "Der Server ist gerade nicht erreichbar. Deine Änderungen wurden lokal gespeichert und werden automatisch synchronisiert, sobald die Verbindung wiederhergestellt ist.";
         await _cloudApi.upsert(todo.copyWith(pending: false));
         _data = _data.map((entry) => entry.id == todo.id ? entry.copyWith(pending: false) : entry).toList();
         await _saveLocallyAndUpdateStream();
-      } catch (_) {
-        // remain pending; will retry on next refresh/loadData
-        //_dataController.addError() could not be used because then the local data is removed from _dataController
-        _errorController.add(
-          "Der Server ist gerade nicht erreichbar. Deine Änderungen wurden lokal gespeichert und werden automatisch synchronisiert, sobald die Verbindung wiederhergestellt ist.",
-        );
-      }
-    } else {
-      try {
+      } else {
+        errorMessage =
+            "Der Server ist gerade nicht erreichbar. Deine Löschung wurde lokal gespeichert und wird automatisch übertragen, sobald die Verbindung wiederhergestellt ist.";
         await _cloudApi.delete(todo.id);
-      } catch (_) {
-        // remain pending; will retry on next refresh/loadData
-        //_dataController.addError() could not be used because then the local data is removed from _dataController
-        _errorController.add(
-          "Der Server ist gerade nicht erreichbar. Deine Löschung wurde lokal gespeichert und wird automatisch übertragen, sobald die Verbindung wiederhergestellt ist.",
-        );
       }
+    } catch (_) {
+      // remain pending; will retry on next refresh/loadData
+      //_dataController.addError() could not be used because then the local data is removed from _dataController
+      _errorController.add(errorMessage);
     }
   }
 
