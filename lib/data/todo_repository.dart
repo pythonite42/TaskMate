@@ -6,20 +6,20 @@ import 'package:task_mate/data/todo_model.dart';
 import 'package:uuid/uuid.dart';
 
 class ToDoRepository {
-  final _local = LocalStore();
-  final _cloud = CloudApi();
+  final _localStore = LocalStore();
+  final _cloudApi = CloudApi();
   final _controller = StreamController<List<ToDo>>.broadcast();
-  List<ToDo> _cache = [];
+  List<ToDo> _data = [];
 
   Stream<List<ToDo>> watch() => _controller.stream;
 
   /// Load local immediately, then try to refresh from cloud, merge, save.
-  Future<void> bootstrap() async {
-    _cache = await _local.readAll();
-    _controller.add(_sorted(_cache));
+  Future<void> loadData() async {
+    _data = await _localStore.getData();
+    _controller.add(_sorted(_data));
     try {
-      final remote = await _cloud.fetchAll();
-      _mergeAndSave(remote);
+      final remoteData = await _cloudApi.getData();
+      _mergeAndSave(remoteData);
     } catch (e) {
       debugPrint("Sync with Server failed. Use local data. Error: $e");
     }
@@ -27,7 +27,7 @@ class ToDoRepository {
 
   Future<void> refresh() async {
     try {
-      final remote = await _cloud.fetchAll();
+      final remote = await _cloudApi.getData();
       _mergeAndSave(remote);
     } catch (e) {
       debugPrint("Sync with Server failed. Use local data. Error: $e");
@@ -35,37 +35,46 @@ class ToDoRepository {
   }
 
   Future<void> add(String title, {int userId = 9}) async {
-    final todo = ToDo(id: const Uuid().v4(), title: title, completed: false, userId: userId, pending: true);
-    _cache = [..._cache, todo];
+    final todo = ToDo(
+      id: Uuid()
+          .v4()
+          .hashCode
+          .abs(), //the server should set the id because I could look up the existing ids and choose one that is not used yet, but this is better handled by the database
+      title: title,
+      completed: false,
+      userId: userId,
+      pending: true,
+    );
+    _data = [..._data, todo];
     await _persistAndEmit();
-    _syncOne(todo, operation: _Operation.upsert);
+    _synchronizeWithCloud(todo, operation: _Operation.upsert);
   }
 
-  Future<void> toggle(String id, bool completed) async {
-    _cache = _cache.map((todo) => todo.id == id ? todo.copyWith(completed: completed, pending: true) : todo).toList();
+  Future<void> toggle(int id, bool completed) async {
+    _data = _data.map((todo) => todo.id == id ? todo.copyWith(completed: completed, pending: true) : todo).toList();
     await _persistAndEmit();
-    _syncOne(_byId(id)!, operation: _Operation.upsert);
+    _synchronizeWithCloud(_byId(id)!, operation: _Operation.upsert);
   }
 
-  Future<void> rename(String id, String title) async {
-    _cache = _cache.map((todo) => todo.id == id ? todo.copyWith(title: title, pending: true) : todo).toList();
+  Future<void> rename(int id, String title) async {
+    _data = _data.map((todo) => todo.id == id ? todo.copyWith(title: title, pending: true) : todo).toList();
     await _persistAndEmit();
-    _syncOne(_byId(id)!, operation: _Operation.upsert);
+    _synchronizeWithCloud(_byId(id)!, operation: _Operation.upsert);
   }
 
-  Future<void> remove(String id) async {
+  Future<void> remove(int id) async {
     final existing = _byId(id);
     if (existing == null) return;
-    _cache = _cache.where((todo) => todo.id != id).toList();
+    _data = _data.where((todo) => todo.id != id).toList();
     await _persistAndEmit();
-    _syncOne(existing, operation: _Operation.delete);
+    _synchronizeWithCloud(existing, operation: _Operation.delete);
   }
 
   // --- internals ---
 
-  ToDo? _byId(String id) {
+  ToDo? _byId(int id) {
     try {
-      return _cache.firstWhere((todo) => todo.id == id);
+      return _data.firstWhere((todo) => todo.id == id);
     } catch (_) {
       return null;
     }
@@ -74,27 +83,27 @@ class ToDoRepository {
   void _mergeAndSave(List<ToDo> remote) async {
     final remoteById = {for (final remoteEntry in remote) remoteEntry.id: remoteEntry};
 
-    final Map<String, ToDo> merged = {};
+    final Map<int, ToDo> merged = {};
 
-    // First, walk local cache and decide case-by-case
-    for (final local in _cache) {
-      final remoteEntry = remoteById[local.id];
+    // First, view local data and decide case-by-case
+    for (final localEntry in _data) {
+      final remoteEntry = remoteById[localEntry.id];
 
       if (remoteEntry == null) {
-        if (local.pending) {
+        if (localEntry.pending) {
           // New or edited locally but not yet pushed -> keep it
-          merged[local.id] = local;
+          merged[localEntry.id] = localEntry;
         } else {
           // Likely deleted remotely -> drop it (do not add to merged)
         }
       } else {
         // Exists on server
-        if (local.pending) {
-          // Keep local pending changes (we'll try to push after saving)
-          merged[local.id] = local;
+        if (localEntry.pending) {
+          // Keep local pending changes (try to push after saving)
+          merged[localEntry.id] = localEntry;
         } else {
           // Take server version and clear pending
-          merged[local.id] = remoteEntry.copyWith(pending: false);
+          merged[localEntry.id] = remoteEntry.copyWith(pending: false);
         }
       }
     }
@@ -107,18 +116,18 @@ class ToDoRepository {
     }
 
     // Commit + emit
-    _cache = merged.values.toList();
+    _data = merged.values.toList();
     await _persistAndEmit();
 
     // Try to push any still-pending locals
-    for (final todo in _cache.where((t) => t.pending)) {
-      _syncOne(todo, operation: _Operation.upsert);
+    for (final todo in _data.where((t) => t.pending)) {
+      _synchronizeWithCloud(todo, operation: _Operation.upsert);
     }
   }
 
   Future<void> _persistAndEmit() async {
-    await _local.writeAll(_cache);
-    _controller.add(_sorted(_cache));
+    await _localStore.setData(_data);
+    _controller.add(_sorted(_data));
   }
 
   List<ToDo> _sorted(List<ToDo> todos) {
@@ -148,14 +157,14 @@ class ToDoRepository {
     ]);
   }
 
-  void _syncOne(ToDo todo, {required _Operation operation}) async {
+  void _synchronizeWithCloud(ToDo todo, {required _Operation operation}) async {
     try {
       if (operation == _Operation.upsert) {
-        await _cloud.upsert(todo.copyWith(pending: false));
-        _cache = _cache.map((entry) => entry.id == todo.id ? entry.copyWith(pending: false) : entry).toList();
+        await _cloudApi.upsert(todo.copyWith(pending: false));
+        _data = _data.map((entry) => entry.id == todo.id ? entry.copyWith(pending: false) : entry).toList();
         await _persistAndEmit();
       } else {
-        await _cloud.delete(todo.id);
+        await _cloudApi.delete(todo.id);
       }
     } catch (_) {
       // remain pending; will retry on next refresh/bootstrap

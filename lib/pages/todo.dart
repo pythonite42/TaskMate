@@ -20,7 +20,7 @@ class _ToDoPageState extends State<ToDoPage> {
   @override
   void initState() {
     super.initState();
-    repo.bootstrap(); // loads local immediately, then tries cloud
+    repo.loadData(); // loads local immediately, then tries cloud
   }
 
   Future<void> _refresh() async {
@@ -41,8 +41,8 @@ class _ToDoPageState extends State<ToDoPage> {
             builder: (context, snap) {
               final items = snap.data ?? [];
 
-              final todos = items.where((e) => !e.completed && e.userId == 9).toList();
-              final dones = items.where((e) => e.completed && e.userId == 9).toList();
+              final todos = items.where((e) => !e.completed && e.userId == 1).toList();
+              final dones = items.where((e) => e.completed && e.userId == 1).toList();
 
               return RefreshIndicator(
                 onRefresh: _refresh,
@@ -60,14 +60,14 @@ class _ToDoPageState extends State<ToDoPage> {
                         )
                       else
                         ...List.generate(todos.length, (index) {
-                          final t = todos[index];
+                          final todo = todos[index];
                           return Entry(
-                            name: _label(t),
+                            name: _label(todo),
                             isDone: false,
                             showDivider: index < todos.length - 1,
-                            onChanged: (checked) => repo.toggle(t.id, checked),
-                            onDelete: () => repo.remove(t.id),
-                            onRename: (newName) => repo.rename(t.id, newName),
+                            onChanged: (checked) => repo.toggle(todo.id, checked),
+                            onDelete: () => repo.remove(todo.id),
+                            onRename: (newName) => repo.rename(todo.id, newName),
                           );
                         }),
 

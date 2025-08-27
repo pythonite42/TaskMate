@@ -1,5 +1,5 @@
 class ToDo {
-  final String id;
+  final int id;
   final String title;
   final bool completed;
   final int userId;
@@ -7,7 +7,7 @@ class ToDo {
 
   ToDo({required this.id, required this.title, required this.completed, required this.userId, this.pending = false});
 
-  ToDo copyWith({String? id, String? title, bool? completed, int? userId, bool? pending}) => ToDo(
+  ToDo copyWith({int? id, String? title, bool? completed, int? userId, bool? pending}) => ToDo(
     id: id ?? this.id,
     title: title ?? this.title,
     completed: completed ?? this.completed,
@@ -16,7 +16,7 @@ class ToDo {
   );
 
   factory ToDo.fromJson(Map<String, dynamic> data) => ToDo(
-    id: data['id'] as String,
+    id: data['id'] as int,
     title: data['title'] as String,
     completed: data['completed'] as bool,
     userId: data['userId'] as int,

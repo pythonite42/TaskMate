@@ -8,7 +8,7 @@ class CloudApi {
     dotenv.env['DATA_URL'] ?? '',
   ); //The URL for the endpoint should not be hardcoded and then pushed to git. For this to work there needs to be a file called .env at the root of the project, with this content: DATA_URL=https://myPlaceholder.com
 
-  Future<List<ToDo>> fetchAll() async {
+  Future<List<ToDo>> getData() async {
     final response = await http.get(url, headers: {'Accept': 'application/json', 'Content-Type': 'application/json'});
     if (response.statusCode != 200) {
       throw Exception('Fetch failed ${response.statusCode}');
@@ -26,7 +26,7 @@ class CloudApi {
     if (response.statusCode >= 300) throw Exception('Upsert failed ${response.statusCode}');
   }
 
-  Future<void> delete(String id) async {
+  Future<void> delete(int id) async {
     final response = await http.delete(url.resolve('/$id'));
     if (response.statusCode >= 300) throw Exception('Delete failed ${response.statusCode}');
   }
