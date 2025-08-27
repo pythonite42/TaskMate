@@ -281,6 +281,17 @@ class _ToDoPageState extends State<ToDoPage> {
         physics: const AlwaysScrollableScrollPhysics(),
         child: Column(
           children: [
+            Row(
+              children: [
+                Checkbox(
+                  value: _showDone,
+                  //TODO fillColor: WidgetStateProperty.all(theme.colorScheme.surface),
+                  onChanged: (newValue) => setState(() => _showDone = newValue ?? true),
+                ),
+                const Text('Zeige erledigte Einträge'),
+              ],
+            ),
+            AppSpacing.lg.vSpace,
             if (_todos.isEmpty)
               const Text('Alle Aufgaben erledigt')
             else
@@ -317,19 +328,7 @@ class _ToDoPageState extends State<ToDoPage> {
             ),
             AppSpacing.lg.vSpace,
 
-            Row(
-              children: [
-                Checkbox(
-                  value: _showDone,
-                  //TODO fillColor: WidgetStateProperty.all(theme.colorScheme.surface),
-                  onChanged: (newValue) => setState(() => _showDone = newValue ?? true),
-                ),
-                const Text('Zeige erledigte Einträge'),
-              ],
-            ),
-
             if (_showDone) ...[
-              AppSpacing.lg.vSpace,
               Padding(
                 padding: const EdgeInsets.all(AppSpacing.lg),
                 child: Text('Erledigte Einträge', style: textTheme.headlineMedium),
