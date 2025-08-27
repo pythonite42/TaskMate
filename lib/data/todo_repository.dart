@@ -34,7 +34,7 @@ class ToDoRepository {
     }
   }
 
-  Future<void> add(String title, {int userId = 9}) async {
+  Future<void> add(String title, {int userId = 1}) async {
     final todo = ToDo(
       id: Uuid()
           .v4()
@@ -46,19 +46,19 @@ class ToDoRepository {
       pending: true,
     );
     _data = [..._data, todo];
-    await _persistAndEmit();
+    await _saveLocallyAndUpdateStream();
     _synchronizeWithCloud(todo, operation: _Operation.upsert);
   }
 
   Future<void> toggle(int id, bool completed) async {
     _data = _data.map((todo) => todo.id == id ? todo.copyWith(completed: completed, pending: true) : todo).toList();
-    await _persistAndEmit();
+    await _saveLocallyAndUpdateStream();
     _synchronizeWithCloud(_byId(id)!, operation: _Operation.upsert);
   }
 
   Future<void> rename(int id, String title) async {
     _data = _data.map((todo) => todo.id == id ? todo.copyWith(title: title, pending: true) : todo).toList();
-    await _persistAndEmit();
+    await _saveLocallyAndUpdateStream();
     _synchronizeWithCloud(_byId(id)!, operation: _Operation.upsert);
   }
 
@@ -66,7 +66,7 @@ class ToDoRepository {
     final existing = _byId(id);
     if (existing == null) return;
     _data = _data.where((todo) => todo.id != id).toList();
-    await _persistAndEmit();
+    await _saveLocallyAndUpdateStream();
     _synchronizeWithCloud(existing, operation: _Operation.delete);
   }
 
@@ -117,7 +117,7 @@ class ToDoRepository {
 
     // Commit + emit
     _data = merged.values.toList();
-    await _persistAndEmit();
+    await _saveLocallyAndUpdateStream();
 
     // Try to push any still-pending locals
     for (final todo in _data.where((t) => t.pending)) {
@@ -125,7 +125,7 @@ class ToDoRepository {
     }
   }
 
-  Future<void> _persistAndEmit() async {
+  Future<void> _saveLocallyAndUpdateStream() async {
     await _localStore.setData(_data);
     _controller.add(_sorted(_data));
   }
@@ -162,12 +162,12 @@ class ToDoRepository {
       if (operation == _Operation.upsert) {
         await _cloudApi.upsert(todo.copyWith(pending: false));
         _data = _data.map((entry) => entry.id == todo.id ? entry.copyWith(pending: false) : entry).toList();
-        await _persistAndEmit();
+        await _saveLocallyAndUpdateStream();
       } else {
         await _cloudApi.delete(todo.id);
       }
     } catch (_) {
-      // remain pending; will retry on next refresh/bootstrap
+      // remain pending; will retry on next refresh/loadData
     }
   }
 }

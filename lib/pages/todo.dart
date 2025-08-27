@@ -114,5 +114,5 @@ class _ToDoPageState extends State<ToDoPage> {
     );
   }
 
-  String _label(ToDo t) => t.pending ? '${t.title}  • syncing…' : t.title;
+  String _label(ToDo t) => t.pending ? '${t.title}  • wird synchronisiert...' : t.title;
 }
