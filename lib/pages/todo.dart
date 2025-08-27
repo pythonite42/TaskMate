@@ -1,7 +1,9 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:task_mate/data/todo_model.dart';
 import 'package:task_mate/data/todo_repository.dart';
+import 'package:task_mate/data/user.dart';
 import 'package:task_mate/global_settings/spacing.dart';
 import 'package:task_mate/widgets/add_entry.dart';
 import 'package:task_mate/widgets/custom_checkbox.dart';
@@ -21,11 +23,13 @@ class _ToDoPageState extends State<ToDoPage> {
   StreamSubscription<String>? _errorSubscription;
   String? _lastErrorMessage;
   DateTime _lastErrorShownAt = DateTime.fromMillisecondsSinceEpoch(0);
+  late User _currentUser;
 
   @override
   void initState() {
     super.initState();
-    repo.loadData(); // loads local immediately, then tries cloud
+    _currentUser = mockUsers.last; // default to last so it is never empty
+    _restoreUser().then((_) => repo.loadData()); // loads local immediately, then tries cloud
     _errorSubscription = repo.watchErrors().listen((message) {
       final now = DateTime.now();
       if (message == _lastErrorMessage && now.difference(_lastErrorShownAt) < const Duration(seconds: 2)) return;
@@ -46,6 +50,20 @@ class _ToDoPageState extends State<ToDoPage> {
     super.dispose();
   }
 
+  Future<void> _restoreUser() async {
+    final prefs = await SharedPreferences.getInstance();
+    final id = prefs.getInt("current_user_id");
+    if (id != null) {
+      final foundUser = mockUsers.firstWhere((user) => user.id == id, orElse: () => _currentUser);
+      setState(() => _currentUser = foundUser);
+    }
+  }
+
+  Future<void> _saveUser(User user) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setInt("current_user_id", user.id);
+  }
+
   Future<void> _refresh() async {
     setState(() => _isRefreshing = true);
     await repo.refresh();
@@ -54,8 +72,35 @@ class _ToDoPageState extends State<ToDoPage> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return Scaffold(
-      appBar: AppBar(title: const Text('TaskMate')),
+      appBar: AppBar(
+        centerTitle: true,
+        title: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
+          child: const Text('TaskMate'),
+        ),
+        actions: [
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm),
+            child: InkWell(
+              borderRadius: BorderRadius.circular(24),
+              onTap: _showUserSwitcher,
+              child: Row(
+                children: [
+                  CircleAvatar(
+                    backgroundColor: theme.colorScheme.secondaryContainer,
+                    child: Text(
+                      _currentUser.initials,
+                      style: TextStyle(fontSize: 16, color: theme.colorScheme.onSecondaryContainer),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.all(AppSpacing.lg),
@@ -64,8 +109,8 @@ class _ToDoPageState extends State<ToDoPage> {
             builder: (context, snapshot) {
               final items = snapshot.data ?? [];
 
-              final todos = items.where((entry) => !entry.completed && entry.userId == 1).toList();
-              final dones = items.where((entry) => entry.completed && entry.userId == 1).toList();
+              final todos = items.where((entry) => !entry.completed && entry.userId == _currentUser.id).toList();
+              final dones = items.where((entry) => entry.completed && entry.userId == _currentUser.id).toList();
 
               return RefreshIndicator(
                 onRefresh: _refresh,
@@ -87,7 +132,7 @@ class _ToDoPageState extends State<ToDoPage> {
                       ),
                       AppSpacing.sm.vSpace,
 
-                      AddEntry(onAdd: (text) => repo.add(text)),
+                      AddEntry(onAdd: (text) => repo.add(text, _currentUser.id)),
 
                       if (todos.isEmpty)
                         const Padding(
@@ -111,7 +156,7 @@ class _ToDoPageState extends State<ToDoPage> {
                       if (_showDone) ...[
                         Padding(
                           padding: const EdgeInsets.symmetric(vertical: AppSpacing.lg, horizontal: AppSpacing.sm),
-                          child: Text('Erledigte Einträge', style: Theme.of(context).textTheme.headlineMedium),
+                          child: Text('Erledigte Einträge', style: theme.textTheme.headlineMedium),
                         ),
                         if (dones.isEmpty)
                           Padding(
@@ -140,6 +185,44 @@ class _ToDoPageState extends State<ToDoPage> {
           ),
         ),
       ),
+    );
+  }
+
+  void _showUserSwitcher() {
+    showModalBottomSheet(
+      context: context,
+      useSafeArea: true,
+      showDragHandle: true,
+      builder: (context) {
+        return ListView.separated(
+          padding: const EdgeInsets.all(AppSpacing.lg),
+          itemCount: mockUsers.length,
+          separatorBuilder: (_, __) => const Divider(height: 1),
+          itemBuilder: (context, i) {
+            final user = mockUsers[i];
+            final selected = user.id == _currentUser.id;
+            return ListTile(
+              leading: CircleAvatar(
+                backgroundColor: Theme.of(context).colorScheme.primary,
+                child: Text(user.initials, style: TextStyle(color: Theme.of(context).colorScheme.onPrimary)),
+              ),
+              title: Text(user.name),
+              subtitle: Text('User-ID: ${user.id}'),
+              trailing: selected ? const Icon(Icons.check_rounded) : null,
+              onTap: () async {
+                Navigator.pop(context);
+                if (!selected) {
+                  setState(() {
+                    _currentUser = user;
+                  });
+                  await _saveUser(user);
+                  await _refresh();
+                }
+              },
+            );
+          },
+        );
+      },
     );
   }
 }

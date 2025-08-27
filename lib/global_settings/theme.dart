@@ -24,6 +24,7 @@ class AppTheme {
       onSurface: Colors.black87,
       error: Color(0xFFDC2626),
       onError: Colors.white,
+      secondaryContainer: Color(0xFFCCCDCB),
     ),
     scaffoldBackgroundColor: _lightSurface,
     appBarTheme: const AppBarTheme(
@@ -80,6 +81,7 @@ class AppTheme {
       onSurface: Colors.white70,
       error: Color(0xFFF87171),
       onError: Colors.black,
+      secondaryContainer: Color(0xFFCCCDCB),
     ),
     scaffoldBackgroundColor: _darkBg,
     appBarTheme: const AppBarTheme(
