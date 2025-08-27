@@ -74,6 +74,15 @@ class _ToDoPageState extends State<ToDoPage> {
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
                       if (_isRefreshing) const LinearProgressIndicator(),
+                      Row(
+                        children: [
+                          Checkbox(value: _showDone, onChanged: (v) => setState(() => _showDone = v ?? true)),
+                          const Text('Zeige erledigte Einträge'),
+                        ],
+                      ),
+                      AppSpacing.sm.vSpace,
+
+                      AddEntry(onAdd: (text) => repo.add(text)),
 
                       if (todos.isEmpty)
                         const Padding(
@@ -94,25 +103,16 @@ class _ToDoPageState extends State<ToDoPage> {
                           );
                         }),
 
-                      AddEntry(onAdd: (text) => repo.add(text)),
-
-                      AppSpacing.lg.vSpace,
-
-                      Row(
-                        children: [
-                          Checkbox(value: _showDone, onChanged: (v) => setState(() => _showDone = v ?? true)),
-                          const Text('Zeige erledigte Einträge'),
-                        ],
-                      ),
-
                       if (_showDone) ...[
-                        AppSpacing.lg.vSpace,
                         Padding(
-                          padding: const EdgeInsets.all(AppSpacing.lg),
+                          padding: const EdgeInsets.symmetric(vertical: AppSpacing.lg, horizontal: AppSpacing.sm),
                           child: Text('Erledigte Einträge', style: Theme.of(context).textTheme.headlineMedium),
                         ),
                         if (dones.isEmpty)
-                          const Text('Noch keine erledigten Aufgaben')
+                          Padding(
+                            padding: EdgeInsets.symmetric(vertical: AppSpacing.sm),
+                            child: Center(child: const Text('Noch keine erledigten Aufgaben')),
+                          )
                         else
                           ...List.generate(dones.length, (index) {
                             final done = dones[index];

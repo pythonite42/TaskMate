@@ -38,6 +38,7 @@ class AppTheme {
       titleMedium: TextStyle(fontSize: 18, fontWeight: FontWeight.w600, color: Colors.black87),
       bodyLarge: TextStyle(fontSize: 16, color: Colors.black87),
       bodyMedium: TextStyle(fontSize: 14, color: Colors.black87),
+      labelSmall: TextStyle(fontSize: 12, color: Colors.black45),
     ),
     inputDecorationTheme: InputDecorationTheme(
       filled: true,
@@ -93,6 +94,7 @@ class AppTheme {
       titleMedium: TextStyle(fontSize: 18, fontWeight: FontWeight.w600, color: Colors.white),
       bodyLarge: TextStyle(fontSize: 16, color: Colors.white70),
       bodyMedium: TextStyle(fontSize: 14, color: Colors.white70),
+      labelSmall: TextStyle(fontSize: 12, color: Colors.white60),
     ),
     inputDecorationTheme: InputDecorationTheme(
       filled: true,
