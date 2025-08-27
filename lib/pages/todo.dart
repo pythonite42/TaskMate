@@ -8,6 +8,7 @@ import 'package:task_mate/global_settings/spacing.dart';
 import 'package:task_mate/widgets/add_entry.dart';
 import 'package:task_mate/widgets/custom_checkbox.dart';
 import 'package:task_mate/widgets/entry.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 class ToDoPage extends StatefulWidget {
   const ToDoPage({super.key});
@@ -84,7 +85,7 @@ class _ToDoPageState extends State<ToDoPage> {
         centerTitle: true,
         title: Padding(
           padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
-          child: const Text('TaskMate'),
+          child: Text('TaskMate', style: GoogleFonts.permanentMarker(textStyle: TextStyle(fontSize: 30))),
         ),
         actions: [
           Padding(
