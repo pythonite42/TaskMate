@@ -8,15 +8,17 @@ import 'package:uuid/uuid.dart';
 class ToDoRepository {
   final _localStore = LocalStore();
   final _cloudApi = CloudApi();
-  final _controller = StreamController<List<ToDo>>.broadcast();
+  final _dataController = StreamController<List<ToDo>>.broadcast();
+  final _errorController = StreamController<String>.broadcast();
   List<ToDo> _data = [];
 
-  Stream<List<ToDo>> watch() => _controller.stream;
+  Stream<String> watchErrors() => _errorController.stream;
+  Stream<List<ToDo>> watchData() => _dataController.stream;
 
   /// Load local immediately, then try to refresh from cloud, merge, save.
   Future<void> loadData() async {
     _data = await _localStore.getData();
-    _controller.add(_sorted(_data));
+    _dataController.add(_sorted(_data));
     try {
       final remoteData = await _cloudApi.getData();
       _mergeAndSave(remoteData);
@@ -127,7 +129,7 @@ class ToDoRepository {
 
   Future<void> _saveLocallyAndUpdateStream() async {
     await _localStore.setData(_data);
-    _controller.add(_sorted(_data));
+    _dataController.add(_sorted(_data));
   }
 
   List<ToDo> _sorted(List<ToDo> todos) {
@@ -158,17 +160,34 @@ class ToDoRepository {
   }
 
   void _synchronizeWithCloud(ToDo todo, {required _Operation operation}) async {
-    try {
-      if (operation == _Operation.upsert) {
+    if (operation == _Operation.upsert) {
+      try {
         await _cloudApi.upsert(todo.copyWith(pending: false));
         _data = _data.map((entry) => entry.id == todo.id ? entry.copyWith(pending: false) : entry).toList();
         await _saveLocallyAndUpdateStream();
-      } else {
-        await _cloudApi.delete(todo.id);
+      } catch (_) {
+        // remain pending; will retry on next refresh/loadData
+        //_dataController.addError() could not be used because then the local data is removed from _dataController
+        _errorController.add(
+          "Der Server ist gerade nicht erreichbar. Deine Änderungen wurden lokal gespeichert und werden automatisch synchronisiert, sobald die Verbindung wiederhergestellt ist.",
+        );
       }
-    } catch (_) {
-      // remain pending; will retry on next refresh/loadData
+    } else {
+      try {
+        await _cloudApi.delete(todo.id);
+      } catch (_) {
+        // remain pending; will retry on next refresh/loadData
+        //_dataController.addError() could not be used because then the local data is removed from _dataController
+        _errorController.add(
+          "Der Server ist gerade nicht erreichbar. Deine Löschung wurde lokal gespeichert und wird automatisch übertragen, sobald die Verbindung wiederhergestellt ist.",
+        );
+      }
     }
+  }
+
+  void dispose() {
+    _dataController.close();
+    _errorController.close();
   }
 }
 

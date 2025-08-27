@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:task_mate/data/todo_model.dart';
 import 'package:task_mate/data/todo_repository.dart';
@@ -16,11 +17,32 @@ class _ToDoPageState extends State<ToDoPage> {
   final repo = ToDoRepository();
   bool _showDone = true;
   bool _isRefreshing = false;
+  StreamSubscription<String>? _errorSubscription;
+  String? _lastErrorMessage;
+  DateTime _lastErrorShownAt = DateTime.fromMillisecondsSinceEpoch(0);
 
   @override
   void initState() {
     super.initState();
     repo.loadData(); // loads local immediately, then tries cloud
+    _errorSubscription = repo.watchErrors().listen((message) {
+      final now = DateTime.now();
+      if (message == _lastErrorMessage && now.difference(_lastErrorShownAt) < const Duration(seconds: 2)) return;
+      _lastErrorMessage = message;
+      _lastErrorShownAt = now;
+
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(message), behavior: SnackBarBehavior.floating, duration: const Duration(seconds: 5)),
+      );
+    });
+  }
+
+  @override
+  void dispose() {
+    _errorSubscription?.cancel();
+    repo.dispose();
+    super.dispose();
   }
 
   Future<void> _refresh() async {
@@ -37,9 +59,9 @@ class _ToDoPageState extends State<ToDoPage> {
         child: Padding(
           padding: const EdgeInsets.all(AppSpacing.lg),
           child: StreamBuilder<List<ToDo>>(
-            stream: repo.watch(),
-            builder: (context, snap) {
-              final items = snap.data ?? [];
+            stream: repo.watchData(),
+            builder: (context, snapshot) {
+              final items = snapshot.data ?? [];
 
               final todos = items.where((e) => !e.completed && e.userId == 1).toList();
               final dones = items.where((e) => e.completed && e.userId == 1).toList();
@@ -92,14 +114,14 @@ class _ToDoPageState extends State<ToDoPage> {
                           const Text('Noch keine erledigten Aufgaben')
                         else
                           ...List.generate(dones.length, (index) {
-                            final t = dones[index];
+                            final done = dones[index];
                             return Entry(
-                              name: _label(t),
+                              name: _label(done),
                               isDone: true,
                               showDivider: index < dones.length - 1,
-                              onChanged: (checked) => repo.toggle(t.id, checked),
-                              onDelete: () => repo.remove(t.id),
-                              onRename: (newName) => repo.rename(t.id, newName),
+                              onChanged: (checked) => repo.toggle(done.id, checked),
+                              onDelete: () => repo.remove(done.id),
+                              onRename: (newName) => repo.rename(done.id, newName),
                             );
                           }),
                       ],
