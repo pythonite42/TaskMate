@@ -4,6 +4,7 @@ import 'package:task_mate/data/todo_model.dart';
 import 'package:task_mate/data/todo_repository.dart';
 import 'package:task_mate/global_settings/spacing.dart';
 import 'package:task_mate/widgets/add_entry.dart';
+import 'package:task_mate/widgets/custom_checkbox.dart';
 import 'package:task_mate/widgets/entry.dart';
 
 class ToDoPage extends StatefulWidget {
@@ -63,8 +64,8 @@ class _ToDoPageState extends State<ToDoPage> {
             builder: (context, snapshot) {
               final items = snapshot.data ?? [];
 
-              final todos = items.where((e) => !e.completed && e.userId == 1).toList();
-              final dones = items.where((e) => e.completed && e.userId == 1).toList();
+              final todos = items.where((entry) => !entry.completed && entry.userId == 1).toList();
+              final dones = items.where((entry) => entry.completed && entry.userId == 1).toList();
 
               return RefreshIndicator(
                 onRefresh: _refresh,
@@ -76,7 +77,11 @@ class _ToDoPageState extends State<ToDoPage> {
                       if (_isRefreshing) const LinearProgressIndicator(),
                       Row(
                         children: [
-                          Checkbox(value: _showDone, onChanged: (v) => setState(() => _showDone = v ?? true)),
+                          CustomCheckbox(
+                            value: _showDone,
+                            size: 20,
+                            onChanged: (newValue) => setState(() => _showDone = newValue),
+                          ),
                           const Text('Zeige erledigte Einträge'),
                         ],
                       ),
