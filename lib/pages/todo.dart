@@ -84,8 +84,9 @@ class _ToDoPageState extends State<ToDoPage> {
                         ...List.generate(todos.length, (index) {
                           final todo = todos[index];
                           return Entry(
-                            name: _label(todo),
+                            name: todo.title,
                             isDone: false,
+                            isPending: todo.pending,
                             showDivider: index < todos.length - 1,
                             onChanged: (checked) => repo.toggle(todo.id, checked),
                             onDelete: () => repo.remove(todo.id),
@@ -116,8 +117,9 @@ class _ToDoPageState extends State<ToDoPage> {
                           ...List.generate(dones.length, (index) {
                             final done = dones[index];
                             return Entry(
-                              name: _label(done),
+                              name: done.title,
                               isDone: true,
+                              isPending: done.pending,
                               showDivider: index < dones.length - 1,
                               onChanged: (checked) => repo.toggle(done.id, checked),
                               onDelete: () => repo.remove(done.id),
@@ -135,6 +137,4 @@ class _ToDoPageState extends State<ToDoPage> {
       ),
     );
   }
-
-  String _label(ToDo t) => t.pending ? '${t.title}  • wird synchronisiert...' : t.title;
 }

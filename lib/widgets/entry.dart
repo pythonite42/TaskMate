@@ -7,6 +7,7 @@ class Entry extends StatefulWidget {
     super.key,
     required this.name,
     required this.isDone,
+    required this.isPending,
     this.showDivider = false,
     required this.onChanged,
     required this.onDelete,
@@ -15,6 +16,7 @@ class Entry extends StatefulWidget {
 
   final String name;
   final bool isDone;
+  final bool isPending;
   final bool showDivider;
   final ValueChanged<bool> onChanged;
   final VoidCallback onDelete;
@@ -84,26 +86,35 @@ class _EntryState extends State<Entry> {
             children: [
               CustomCheckbox(value: widget.isDone, onChanged: widget.onChanged),
               Expanded(
-                child: _editing
-                    ? TextField(
-                        controller: _controller,
-                        focusNode: _focusNode,
-                        autofocus: true,
-                        textInputAction: TextInputAction.done,
-                        onEditingComplete: _saveEditing,
-                        onSubmitted: (_) => _saveEditing(),
-                        style: textStyle,
-                        decoration: const InputDecoration(
-                          isDense: true,
-                          border: InputBorder.none,
-                          contentPadding: EdgeInsets.zero,
-                        ),
-                      )
-                    : GestureDetector(
-                        onTap: _startEditing,
-                        onLongPress: _startEditing,
-                        child: Text(widget.name, style: textStyle),
-                      ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    if (widget.isPending) ...[
+                      Text("Wird synchronisiert...", style: theme.textTheme.labelSmall),
+                      AppSpacing.xs.vSpace,
+                    ],
+                    _editing
+                        ? TextField(
+                            controller: _controller,
+                            focusNode: _focusNode,
+                            autofocus: true,
+                            textInputAction: TextInputAction.done,
+                            onEditingComplete: _saveEditing,
+                            onSubmitted: (_) => _saveEditing(),
+                            style: textStyle,
+                            decoration: const InputDecoration(
+                              isDense: true,
+                              border: InputBorder.none,
+                              contentPadding: EdgeInsets.zero,
+                            ),
+                          )
+                        : GestureDetector(
+                            onTap: _startEditing,
+                            onLongPress: _startEditing,
+                            child: Text(widget.name, style: textStyle),
+                          ),
+                  ],
+                ),
               ),
 
               if (_editing) ...[
