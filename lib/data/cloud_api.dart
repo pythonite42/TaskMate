@@ -20,7 +20,7 @@ class CloudApi {
   }
 
   //for upsert and delete I get status code 200 but the backend is not actually changed.
-  //This is because I use a fake backend for testing and it does not actually change anything
+  //This is because jsonplaceholder is a fake backend for testing and it does not actually change anything
   //this of course leads to a reset of the changes whenever the data is reloaded
 
   Future<void> upsert(ToDo todo) async {
