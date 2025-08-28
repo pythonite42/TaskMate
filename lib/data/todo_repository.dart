@@ -61,15 +61,18 @@ class ToDoRepository {
   Future<void> rename(int id, String title) async {
     _data = _data.map((todo) => todo.id == id ? todo.copyWith(title: title, pending: true) : todo).toList();
     await _saveLocallyAndUpdateStream();
-    _synchronizeWithCloud(_byId(id)!, operation: _Operation.upsert);
+    final todo = _byId(id);
+    if (todo != null) {
+      _synchronizeWithCloud(todo, operation: _Operation.upsert);
+    }
   }
 
   Future<void> remove(int id) async {
-    final existing = _byId(id);
-    if (existing == null) return;
+    final todo = _byId(id);
+    if (todo == null) return;
     _data = _data.where((todo) => todo.id != id).toList();
     await _saveLocallyAndUpdateStream();
-    _synchronizeWithCloud(existing, operation: _Operation.delete);
+    _synchronizeWithCloud(todo, operation: _Operation.delete);
   }
 
   // --- internals ---

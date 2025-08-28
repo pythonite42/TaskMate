@@ -2,9 +2,9 @@ import 'package:flutter/material.dart';
 
 class AppTheme {
   // Greens
-  static const Color _primaryGreen = Color(0xFF16A34A); // ~green-600
-  static const Color _primaryGreenDark = Color(0xFF166534); // ~green-800
-  static const Color _primaryGreenLight = Color(0xFF4ADE80); // ~green-400
+  static const Color _primaryGreen = Color(0xFF16A34A);
+  static const Color _primaryGreenDark = Color(0xFF166534);
+  static const Color _primaryGreenLight = Color(0xFF4ADE80);
 
   // Neutrals
   static const Color _lightSurface = Color(0xFFF8FAFC); // soft neutral

@@ -20,8 +20,7 @@ class ToDoPage extends StatefulWidget {
 class _ToDoPageState extends State<ToDoPage> {
   final repo = ToDoRepository();
   bool _showDone = true;
-  bool _isRefreshing = false;
-  StreamSubscription<String>? _errorSubscription;
+  late final StreamSubscription<String>? _errorSubscription;
   String? _lastErrorMessage;
   DateTime _lastErrorShownAt = DateTime.fromMillisecondsSinceEpoch(0);
   late User _currentUser;
@@ -70,19 +69,12 @@ class _ToDoPageState extends State<ToDoPage> {
     await prefs.setInt("current_user_id", user.id);
   }
 
-  Future<void> _refresh() async {
-    setState(() => _isRefreshing = true);
-    await repo.refresh();
-    setState(() => _isRefreshing = false);
-  }
-
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     return Scaffold(
       appBar: AppBar(
         backgroundColor: theme.primaryColor,
-        centerTitle: true,
         title: Padding(
           padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
           child: Text('TaskMate', style: GoogleFonts.permanentMarker(textStyle: TextStyle(fontSize: 30))),
@@ -120,13 +112,12 @@ class _ToDoPageState extends State<ToDoPage> {
               final dones = items.where((entry) => entry.completed && entry.userId == _currentUser.id).toList();
 
               return RefreshIndicator(
-                onRefresh: _refresh,
+                onRefresh: repo.refresh,
                 child: SingleChildScrollView(
                   physics: const AlwaysScrollableScrollPhysics(),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      if (_isRefreshing) const LinearProgressIndicator(),
                       Row(
                         children: [
                           CustomCheckbox(
@@ -143,7 +134,7 @@ class _ToDoPageState extends State<ToDoPage> {
 
                       if (todos.isEmpty)
                         const Padding(
-                          padding: EdgeInsets.symmetric(vertical: 24),
+                          padding: EdgeInsets.symmetric(vertical: AppSpacing.lg),
                           child: Center(child: Text('Alle Aufgaben erledigt')),
                         )
                       else
@@ -201,29 +192,30 @@ class _ToDoPageState extends State<ToDoPage> {
       useSafeArea: true,
       showDragHandle: true,
       builder: (context) {
+        final colorScheme = Theme.of(context).colorScheme;
         return ListView.separated(
           padding: const EdgeInsets.all(AppSpacing.lg),
           itemCount: mockUsers.length,
           separatorBuilder: (_, __) => const Divider(height: 1),
           itemBuilder: (context, i) {
             final user = mockUsers[i];
-            final selected = user.id == _currentUser.id;
+            final isSelectedUser = user.id == _currentUser.id;
             return ListTile(
               leading: CircleAvatar(
-                backgroundColor: Theme.of(context).colorScheme.primary,
-                child: Text(user.initials, style: TextStyle(color: Theme.of(context).colorScheme.onPrimary)),
+                backgroundColor: colorScheme.primary,
+                child: Text(user.initials, style: TextStyle(color: colorScheme.onPrimary)),
               ),
               title: Text(user.name),
               subtitle: Text('User-ID: ${user.id}'),
-              trailing: selected ? const Icon(Icons.check_rounded) : null,
+              trailing: isSelectedUser ? const Icon(Icons.check_rounded) : null,
               onTap: () async {
                 Navigator.pop(context);
-                if (!selected) {
+                if (!isSelectedUser) {
                   setState(() {
                     _currentUser = user;
                   });
                   await _saveUser(user);
-                  await _refresh();
+                  await repo.refresh();
                 }
               },
             );

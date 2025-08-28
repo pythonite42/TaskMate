@@ -28,7 +28,7 @@ class CloudApi {
     //this is not perfect because if the patch fails for another reason than "not found", I would still do a post
     //If the backend were giving proper status codes (e.g. 404 for not found) I could check for that
     //but jsonplaceholder always returns 200
-    var newUrl = Uri.parse('$url/${todo.id}');
+    final Uri newUrl = Uri.parse('$url/${todo.id}');
     final responsePatch = await http.patch(
       newUrl,
       headers: {'Accept': 'application/json', 'Content-Type': 'application/json'},
@@ -45,7 +45,10 @@ class CloudApi {
   }
 
   Future<void> delete(int id) async {
-    final response = await http.delete(Uri.parse('$url/$id'));
+    final response = await http.delete(
+      Uri.parse('$url/$id'),
+      headers: {'Accept': 'application/json', 'Content-Type': 'application/json'},
+    );
     if (response.statusCode >= 300) throw Exception('Delete failed ${response.statusCode}');
   }
 }
