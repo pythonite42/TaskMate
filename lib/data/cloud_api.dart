@@ -20,10 +20,14 @@ class CloudApi {
   }
 
   //for upsert and delete I get status code 200 but the backend is not actually changed.
-  //Maybe this is a wanted behaviour or the backend is setup wrong
+  //This is because I use a fake backend for testing and it does not actually change anything
   //this of course leads to a reset of the changes whenever the data is reloaded
 
   Future<void> upsert(ToDo todo) async {
+    //since it is easier in the rest of the code to not distinguish between insert and update, I try patch first and if that fails I do a post
+    //this is not perfect because if the patch fails for another reason than "not found", I would still do a post
+    //If the backend were giving proper status codes (e.g. 404 for not found) I could check for that
+    //but jsonplaceholder always returns 200
     var newUrl = Uri.parse('$url/${todo.id}');
     final responsePatch = await http.patch(
       newUrl,
